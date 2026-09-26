@@ -179,11 +179,43 @@
     if (!card) return '';
     const xml = (value) => String(value ?? '').replace(/[&<>"']/g, (char) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&apos;' }[char]));
     const shorten = (value, limit) => String(value ?? '').length > limit ? `${String(value).slice(0, limit - 1)}…` : String(value ?? '');
+    const starPoints = (cx, cy, outer = 8.2, inner = 3.7) => Array.from({ length: 10 }, (_, index) => {
+      const radius = index % 2 ? inner : outer;
+      const angle = -Math.PI / 2 + index * Math.PI / 5;
+      return `${(cx + Math.cos(angle) * radius).toFixed(1)},${(cy + Math.sin(angle) * radius).toFixed(1)}`;
+    }).join(' ');
+    const starRow = (count, rank = false) => {
+      const total = Math.max(0, Math.min(13, Number(count) || 0));
+      const gap = total > 12 ? 25 : 27;
+      const start = rank ? 49 : 371 - (total - 1) * gap;
+      return Array.from({ length: total }, (_, index) => {
+        const cx = start + index * gap;
+        return `<circle cx="${cx}" cy="112" r="11" fill="${rank ? '#111820' : '#d96c21'}" stroke="${rank ? '#8a96a3' : '#8c3617'}" stroke-width="1.4"/><polygon points="${starPoints(cx, 112)}" fill="#f6d348" stroke="#fff2a1" stroke-width=".7"/>`;
+      }).join('');
+    };
+    const linkMarker = (count) => {
+      const cx = 360, cy = 112;
+      const points = Array.from({ length: 16 }, (_, index) => {
+        const radius = index % 2 ? 10 : 18;
+        const angle = -Math.PI / 2 + index * Math.PI / 8;
+        return `${(cx + Math.cos(angle) * radius).toFixed(1)},${(cy + Math.sin(angle) * radius).toFixed(1)}`;
+      }).join(' ');
+      return `<polygon points="${points}" fill="#c62d35" stroke="#fff" stroke-width="1.7" stroke-linejoin="round"/><circle cx="${cx}" cy="${cy}" r="8.5" fill="#17314d"/><text x="${cx}" y="${cy + 5}" text-anchor="middle" font-family="Arial, sans-serif" font-size="13" font-weight="700" fill="#fff">${Math.max(0, Number(count) || 0)}</text>`;
+    };
     const frame = formatBorder(card.b);
     const attribute = DATA.labels.attribute[card.a] || card.a;
     const race = DATA.labels.race[card.r] || card.r;
-    const palette = (card.b & 64) ? ['#244c75', '#8ac6e8'] : (card.b & 32) ? ['#20242f', '#aab6d1'] : (card.b & 16) ? ['#e5e8eb', '#8093a8'] : (card.b & 8) ? ['#594077', '#c9a9ec'] : (card.b & 4) ? ['#344f8d', '#9bb8f0'] : (card.b & 2) ? ['#d8bd69', '#f7e7a4'] : ['#9a542d', '#edbb7b'];
-    const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="420" height="610" viewBox="0 0 420 610"><defs><linearGradient id="f" x2="1" y2="1"><stop stop-color="${palette[0]}"/><stop offset="1" stop-color="${palette[1]}"/></linearGradient><linearGradient id="a" y2="1"><stop stop-color="#183049"/><stop offset="1" stop-color="#07111f"/></linearGradient></defs><rect width="420" height="610" rx="18" fill="url(#f)"/><rect x="15" y="15" width="390" height="580" rx="11" fill="none" stroke="#f5e8c6" stroke-width="3" opacity=".75"/><rect x="31" y="34" width="358" height="58" rx="5" fill="#f7f1df" fill-opacity=".94"/><text x="48" y="71" font-family="Microsoft YaHei, sans-serif" font-size="24" font-weight="700" fill="#172033">${xml(shorten(card.name, 18))}</text><circle cx="361" cy="63" r="20" fill="#17283a"/><text x="361" y="69" text-anchor="middle" font-family="Microsoft YaHei, sans-serif" font-size="15" font-weight="700" fill="#eef7ff">${xml(shorten(attribute, 2))}</text><rect x="38" y="112" width="344" height="283" rx="4" fill="url(#a)" stroke="#dfc98d" stroke-width="5"/><path d="M72 318L168 195l54 67 45-54 81 110z" fill="#6da9c8" opacity=".28"/><circle cx="128" cy="186" r="45" fill="#85d9d0" opacity=".18"/><text x="210" y="244" text-anchor="middle" font-family="Microsoft YaHei, sans-serif" font-size="28" font-weight="700" fill="#d8f5ff">卡片解码者</text><text x="210" y="281" text-anchor="middle" font-family="Microsoft YaHei, sans-serif" font-size="17" fill="#94bad1">网页版信息卡</text><rect x="30" y="414" width="360" height="151" rx="5" fill="#f8f0da" fill-opacity=".95" stroke="#6b3e25" stroke-width="3"/><text x="48" y="448" font-family="Microsoft YaHei, sans-serif" font-size="18" font-weight="700" fill="#30261d">【${xml(frame)}／${xml(race)}】</text><text x="48" y="483" font-family="Microsoft YaHei, sans-serif" font-size="17" fill="#40362c">等级／阶级／连接：${xml(card.n)}</text><line x1="48" y1="513" x2="372" y2="513" stroke="#876e52"/><text x="372" y="544" text-anchor="end" font-family="Arial, Microsoft YaHei, sans-serif" font-size="18" font-weight="700" fill="#30261d">ATK/${xml(formatStat(card.atk))}　DEF/${xml(formatStat(card.def))}</text></svg>`;
+    const palette = (card.b & 32) ? ['#15528f', '#2b80bd']
+      : (card.b & 16) ? ['#171b21', '#444b55']
+      : (card.b & 8) ? ['#d7dce0', '#f8fafb']
+      : (card.b & 4) ? ['#684487', '#a57bc3']
+      : (card.b & 64) ? ['#356f9f', '#66a8c7']
+      : (card.b & 1) ? ['#c3a34c', '#ead98c'] : ['#9c562d', '#dc9860'];
+    const isLink = Boolean(card.b & 32), isXyz = Boolean(card.b & 16), isPendulum = Boolean(card.b & 128);
+    const indicator = isLink ? linkMarker(card.n) : starRow(card.n, isXyz);
+    const numberLabel = isLink ? `连接-${card.n}` : isXyz ? `阶级 ${card.n}` : `等级 ${card.n}`;
+    const pendulumAccent = isPendulum ? '<path d="M18 510L18 584Q18 592 27 592H393Q402 592 402 584V510Z" fill="#3aa69a" fill-opacity=".3"/><path d="M24 518H396" stroke="#baf2dc" stroke-width="2" opacity=".75"/>' : '';
+    const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="420" height="610" viewBox="0 0 420 610"><defs><linearGradient id="f" x2="1" y2="1"><stop stop-color="${palette[0]}"/><stop offset="1" stop-color="${palette[1]}"/></linearGradient><linearGradient id="a" y2="1"><stop stop-color="#183049"/><stop offset="1" stop-color="#07111f"/></linearGradient></defs><rect width="420" height="610" rx="18" fill="url(#f)"/>${pendulumAccent}<rect x="15" y="15" width="390" height="580" rx="11" fill="none" stroke="#f5e8c6" stroke-width="3" opacity=".75"/><rect x="31" y="34" width="358" height="58" rx="5" fill="#f7f1df" fill-opacity=".94"/><text x="48" y="71" font-family="Microsoft YaHei, sans-serif" font-size="24" font-weight="700" fill="#172033">${xml(shorten(card.name, 18))}</text><circle cx="361" cy="63" r="20" fill="#17283a"/><text x="361" y="69" text-anchor="middle" font-family="Microsoft YaHei, sans-serif" font-size="15" font-weight="700" fill="#eef7ff">${xml(shorten(attribute, 2))}</text>${indicator}<rect x="38" y="132" width="344" height="263" rx="4" fill="url(#a)" stroke="#dfc98d" stroke-width="5"/><path d="M72 318L168 195l54 67 45-54 81 110z" fill="#6da9c8" opacity=".28"/><circle cx="128" cy="186" r="45" fill="#85d9d0" opacity=".18"/><text x="210" y="244" text-anchor="middle" font-family="Microsoft YaHei, sans-serif" font-size="28" font-weight="700" fill="#d8f5ff">卡片解码者</text><text x="210" y="281" text-anchor="middle" font-family="Microsoft YaHei, sans-serif" font-size="17" fill="#94bad1">网页版信息卡</text><rect x="30" y="414" width="360" height="151" rx="5" fill="#f8f0da" fill-opacity=".95" stroke="#6b3e25" stroke-width="3"/><text x="48" y="448" font-family="Microsoft YaHei, sans-serif" font-size="18" font-weight="700" fill="#30261d">【${xml(frame)}／${xml(race)}】</text><text x="48" y="483" font-family="Microsoft YaHei, sans-serif" font-size="17" fill="#40362c">${xml(numberLabel)}</text><line x1="48" y1="513" x2="372" y2="513" stroke="#876e52"/><text x="372" y="544" text-anchor="end" font-family="Arial, Microsoft YaHei, sans-serif" font-size="18" font-weight="700" fill="#30261d">ATK/${xml(formatStat(card.atk))}　DEF/${xml(formatStat(card.def))}</text></svg>`;
     return `data:image/svg+xml;charset=utf-8,${encodeURIComponent(svg)}`;
   }
 
