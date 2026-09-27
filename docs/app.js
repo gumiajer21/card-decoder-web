@@ -2220,6 +2220,12 @@
     $('#revealTargetBtn').addEventListener('click', revealSessionTarget);
     $('#autoJudgeBtn').addEventListener('click', autoJudgeChallenge);
     $('#simulationBtn').addEventListener('click', openSimulation);
+    $('#faqBtn').addEventListener('click', () => $('#faqDialog').showModal());
+    $('#faqCloseBtn').addEventListener('click', () => $('#faqDialog').close());
+    $('#faqDoneBtn').addEventListener('click', () => $('#faqDialog').close());
+    $('#changelogBtn').addEventListener('click', () => $('#changelogDialog').showModal());
+    $('#changelogCloseBtn').addEventListener('click', () => $('#changelogDialog').close());
+    $('#changelogDoneBtn').addEventListener('click', () => $('#changelogDialog').close());
     $('#simulationCloseBtn').addEventListener('click', () => $('#simulationDialog').close());
     $('#simulationCancelBtn').addEventListener('click', () => $('#simulationDialog').close());
     $('#simulationForm').addEventListener('submit', (event) => { event.preventDefault(); runSimulation(); });

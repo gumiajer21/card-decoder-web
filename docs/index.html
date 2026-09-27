@@ -29,6 +29,9 @@
       <button id="testModeBtn" class="quiet-btn" type="button">测试模式</button>
       <button id="gameModeBtn" class="quiet-btn" type="button">小游戏模式</button>
       <button id="simulationBtn" class="quiet-btn" type="button">规模测试</button>
+      <button id="faqBtn" class="quiet-btn" type="button">常见问题</button>
+      <button id="changelogBtn" class="quiet-btn" type="button">版本记录</button>
+      <a class="quiet-btn top-link" href="https://www.bilibili.com/video/BV1pPhU6XEQu" target="_blank" rel="noopener noreferrer">B站介绍视频</a>
     </div></div>
   </header>
 
@@ -126,6 +129,39 @@
   </dialog>
   <dialog id="importDialog" class="modal">
     <form method="dialog" class="modal-card" id="importForm"><header><div><p class="eyebrow">跨设备／隔日续用</p><h2>导入活动记录</h2></div><button id="importCloseBtn" class="icon-btn" type="button" aria-label="关闭">×</button></header><p class="modal-note">直接选择之前导出的 JSON 文件，或粘贴 JSON／逐行文本。导入前会逐条校验。</p><label class="file-import"><span>选择活动记录文件</span><input id="activityImportFile" type="file" accept="application/json,.json,.txt"></label><textarea id="activityImportText" rows="14" spellcheck="false" placeholder="1|初始|属性|暗&#10;1|提示|攻击力|1000&#10;1|挑战|效果遮蒙者|属性,种族,攻击力|-|-"></textarea><footer><button id="importCancelBtn" class="quiet-btn" type="button">取消</button><button class="primary-btn" type="submit">检查并导入</button></footer></form>
+  </dialog>
+
+  <dialog id="faqDialog" class="modal info-modal">
+    <div class="modal-card info-card">
+      <header><div><p class="eyebrow">使用与判定说明</p><h2>常见问题及解答</h2></div><button id="faqCloseBtn" class="icon-btn" type="button" aria-label="关闭">×</button></header>
+      <div class="faq-list">
+        <details open><summary>1. 为什么求解器会推荐不符合已知条件的卡？</summary><p>挑战卡不必是候选答案。某张卡虽然不符合已有线索，但它的六项特征可能更适合区分剩余候选，能够一次验证多个字段。求解器比较的是后续整体成功率和资源消耗，而不是只从候选答案中挑卡。</p></details>
+        <details><summary>2. 为什么候选只剩几张，求解器仍然建议使用提示？</summary><p>提示揭示的字段是随机的，但不消耗挑战次数。某些情况下，保留有限的挑战次数比立即猜测更有价值。求解器会综合当前候选分布、剩余题数和两类资源库存进行判断，并不固定采用“先提示”或“先挑战”。</p></details>
+        <details><summary>3. 为什么候选只剩一张，推荐卡却不一定是这张卡？</summary><p>正常情况下，如果该候选确实可以直接通关，求解器应优先推荐它。若出现其他推荐，可能是多张卡属于相同判定组、数据库与活动卡池存在误差，或者录入的挑战反馈存在矛盾。建议展开判定组并检查活动记录。</p></details>
+        <details><summary>4. 为什么有多张卡六项信息完全相同？</summary><p>游戏中存在六项判定完全相同的不同卡片。根据活动规则，只要选择其中任意一张进行挑战，就会被判定为正确答案。求解器会把这些卡归入同一个判定组。</p></details>
+        <details><summary>5. 为什么六项都点亮了，却仍然没有通关？</summary><p>这主要发生在灵摆卡上。目标为灵摆卡时，只要挑战卡命中其组成边框之一，边框项就会点亮，并揭示完整目标边框。因此可能出现六项全部点亮，但挑战卡完整边框与目标不同的情况；此时六项相符仍然有效，但不算猜中整张卡。</p></details>
+        <details><summary>6. 灵摆卡的边框结果应该怎样录入？</summary><p>边框点亮后，应选择游戏实际揭示的完整目标边框，例如“效果／灵摆”“超量／灵摆”或“仪式／灵摆”，不能只选择挑战卡自身的边框。求解器不会默认代选，以避免错误排除候选。</p></details>
+        <details><summary>7. 为什么候选数量与游戏内实际情况不完全一致？</summary><p>工具卡库已尽量与《大师决斗》游戏内数据库校准，但科乐美没有公开“卡片解码者”活动的完整抽题名单，活动可能额外排除少量特殊卡。因此候选范围仍可能存在很小误差。</p></details>
+        <details><summary>8. 四种计算模式应该选哪个？</summary><p>通常建议使用“综合期望”，它会兼顾当前收益、通关概率、信息价值和后续资源。“本次得分”偏向当前一手收益；“通关概率”偏向立即猜中；“信息量”偏向缩小候选范围，主要用于观察和研究。</p></details>
+        <details><summary>9. 规模测试为什么较慢？并行数越高越好吗？</summary><p>规模测试会反复调用与实操相同的求解策略，而不是使用简化随机策略，因此计算量较大。提高并行数会增加内存占用和线程竞争，速度通常不会按并行数成倍提升，一般推荐使用 4 路并行。</p></details>
+        <details><summary>10. 工具会上传我的活动记录或操作数据吗？</summary><p>不会。求解、规模测试和活动记录都在浏览器本地处理，导入和导出的文件也只由用户自行保存。网页仅使用 Cloudflare Web Analytics 统计匿名访问量和性能指标，不上传具体谜题记录或卡片选择。</p></details>
+      </div>
+      <footer><button id="faqDoneBtn" class="primary-btn" type="button">完成</button></footer>
+    </div>
+  </dialog>
+
+  <dialog id="changelogDialog" class="modal info-modal">
+    <div class="modal-card info-card">
+      <header><div><p class="eyebrow">项目沿革</p><h2>原始版本与更新记录</h2></div><button id="changelogCloseBtn" class="icon-btn" type="button" aria-label="关闭">×</button></header>
+      <section class="origin-note"><span>原始版本 · 2026-09-24</span><h3>从活动规则到本地求解器</h3><p>项目最初用于研究《游戏王：大师决斗》“卡片解码者”活动，将六项卡片信息、提示与挑战资源抽象为有限时域决策问题，并提供候选筛选、行动推荐、测试模式和规模模拟。</p></section>
+      <div class="changelog-list">
+        <article><time>2026-09-27</time><div><h3>灵摆判定与交互完善</h3><p>按官方规则拆分“相符项”和“整卡通关”，支持完整组合边框录入；修复等价行动剪枝、活动轨迹、挑战反馈、仿卡面与帮助入口。</p></div></article>
+        <article><time>2026-09-26</time><div><h3>网页版与数据库体验</h3><p>推出无需安装的静态网页版，加入完整数据库筛选、图格浏览、活动导入导出、逐项补录、并行规模测试和匿名访问统计。</p></div></article>
+        <article><time>2026-09-25</time><div><h3>模型与资源权衡升级</h3><p>统一提示和挑战的决策比较，采用贝叶斯候选状态、有限层级求解与独立规模测试，并改进资源价值和后续题目权衡。</p></div></article>
+        <article><time>2026-09-24</time><div><h3>首个可用版本</h3><p>完成六项线索录入、候选卡筛选、挑战推荐、奖励配置、测试模式与基础可视化界面。</p></div></article>
+      </div>
+      <footer><a class="quiet-btn dialog-link" href="https://www.bilibili.com/video/BV1pPhU6XEQu" target="_blank" rel="noopener noreferrer">观看 B站介绍视频</a><button id="changelogDoneBtn" class="primary-btn" type="button">完成</button></footer>
+    </div>
   </dialog>
 
   <dialog id="simulationDialog" class="modal">
