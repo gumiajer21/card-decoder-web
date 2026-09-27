@@ -67,7 +67,7 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 2px s
 .creator-notice { display: grid; gap: 3px; max-width: 430px; padding: 4px 10px; text-align: center; }
 .creator-notice strong { color: var(--sky); font-size: 1rem; letter-spacing: .04em; }
 .creator-notice span { color: var(--muted); font-size: .76rem; line-height: 1.45; }
-.triple-icons { display:block; width:184px; height:46px; flex:0 0 184px; overflow:hidden; border-radius:5px; background:#fff; }
+.triple-icons { display:block; width:368px; height:92px; flex:0 0 368px; overflow:hidden; border-radius:7px; background:#fff; }
 .triple-icons img { display:block; width:100%; height:100%; object-fit:contain; }
 .top-controls { display: grid; justify-items: end; gap: 7px; }
 .event-stats, .event-actions { display: flex; align-items: center; justify-content: flex-end; gap: 8px; flex-wrap: wrap; }

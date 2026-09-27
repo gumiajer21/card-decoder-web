@@ -1005,8 +1005,6 @@
   function selectGuess(index) {
     selectedGuess = Number(index);
     feedbackMask = 0;
-    $('#pendulumBorderExact').checked = false;
-    delete $('#pendulumBorderExact').dataset.autoExact;
     const card = CARDS[selectedGuess];
     $('#cardSearch').value = card.name;
     $('#searchResults').hidden = true;
