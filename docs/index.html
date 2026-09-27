@@ -13,7 +13,7 @@
   <div class="ambient ambient-a"></div><div class="ambient ambient-b"></div>
   <header class="topbar">
     <div class="brand"><div class="brand-mark" aria-hidden="true"><span></span><span></span><span></span></div><div><h1>卡片解码者</h1><p>大师决斗在线求解器</p></div></div>
-    <div class="creator-notice"><strong>B站 @Gumiajer 制作 · 免费分享</strong><span>非官方研究与活动辅助工具，与科乐美无关；请勿用于商业用途。</span></div>
+    <div class="creator-notice"><div class="creator-line"><strong>B站 @Gumiajer 制作 · 免费分享</strong><span class="triple-icons"><img src="bilibili-triple.gif" alt="点赞、投币、收藏"></span></div><span>非官方研究与活动辅助工具，与科乐美无关；请勿用于商业用途。</span></div>
     <div class="top-controls"><div class="event-stats" aria-label="活动状态">
       <label>题目 <input id="puzzleNumber" type="number" min="1" max="9" value="1" aria-label="题号"><span id="puzzleTotal">/ 9</span></label>
       <label>提示 <input id="hintStock" type="number" min="0" value="3" aria-label="提示库存"></label>
@@ -103,7 +103,7 @@
       <p class="modal-note" id="feedbackNote">只有真实活动需要这一步；测试和小游戏模式会自动生成判定。</p>
       <div id="feedbackConflict" class="feedback-conflict" role="alert" hidden>这组反馈与当前卡池矛盾，请检查勾选项和灵摆边框判定。</div>
       <div class="feedback-grid" id="feedbackGrid" aria-label="挑战反馈"></div>
-      <div class="special-reveals" id="specialReveals" hidden><label id="pendulumExactWrap" class="pendulum-check" hidden><input id="pendulumBorderExact" type="checkbox"><span><b>游戏判定完全猜中</b><small>仅当六项均点亮时可据此判断灵摆部分；若没有完全猜中，请不要勾选。</small></span></label><label id="numberRevealWrap" hidden><span>目标显示的等级／阶级／连接</span><select id="numberReveal"></select></label></div>
+      <div class="special-reveals" id="specialReveals" hidden><label id="borderRevealWrap" hidden><span>游戏揭示的完整目标边框</span><select id="borderReveal"></select></label><label id="numberRevealWrap" hidden><span>目标显示的等级／阶级／连接</span><select id="numberReveal"></select></label></div>
       <footer><button id="feedbackCancelBtn" class="quiet-btn" type="button">取消</button><button class="primary-btn" id="confirmFeedbackBtn" type="submit">保存判定并扣除挑战</button></footer>
     </form>
   </dialog>
