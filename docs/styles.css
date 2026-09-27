@@ -58,12 +58,17 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 2px s
   backdrop-filter: blur(18px);
 }
 .brand { display: flex; align-items: center; gap: 13px; flex: 0 0 auto; }
+.brand-zone { display:grid; gap:11px; justify-items:start; flex:0 0 auto; }
 .brand h1 { margin: 0; font-size: 1.22rem; letter-spacing: .12em; }
 .brand p { margin: 3px 0 0; color: var(--muted); font-size: .78rem; }
 .brand-mark { width: 42px; aspect-ratio: 1; position: relative; border: 1px solid var(--line-strong); transform: rotate(30deg); border-radius: 10px; box-shadow: inset 0 0 18px rgba(94,234,212,.12); }
 .brand-mark span { position: absolute; inset: 9px 19px; background: var(--cyan); box-shadow: 0 0 10px var(--cyan); }
 .brand-mark span:nth-child(2) { transform: rotate(60deg); }
 .brand-mark span:nth-child(3) { transform: rotate(120deg); }
+.public-links { display:flex; align-items:center; flex-wrap:wrap; gap:7px; padding-left:1px; }
+.public-links button, .public-links a { display:inline-flex; align-items:center; gap:6px; height:30px; padding:0 10px; border:1px solid rgba(125,211,252,.25); border-radius:999px; color:var(--sky); background:rgba(59,130,246,.08); font-size:.72rem; font-weight:700; text-decoration:none; white-space:nowrap; transition:border-color .18s ease, background .18s ease, transform .18s ease; }
+.public-links button:hover, .public-links a:hover { border-color:rgba(125,211,252,.55); background:rgba(59,130,246,.16); transform:translateY(-1px); }
+.public-links span { display:grid; place-items:center; width:17px; height:17px; border-radius:50%; color:#06111f; background:var(--sky); font-size:.65rem; font-weight:900; }
 .creator-notice { display: grid; gap: 3px; width: min(760px, 40vw); max-width: 760px; min-width: 620px; padding: 4px 10px; text-align: center; }
 .creator-notice strong { color: var(--sky); font-size: clamp(1.7rem, 2.4vw, 2.4rem); line-height: 1.08; letter-spacing: .04em; white-space: nowrap; }
 .creator-notice span { color: var(--muted); font-size: .76rem; line-height: 1.45; }
@@ -72,7 +77,6 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 2px s
 .top-controls { display: grid; justify-items: end; gap: 7px; }
 .event-stats, .event-actions { display: flex; align-items: center; justify-content: flex-end; gap: 8px; flex-wrap: wrap; }
 .event-actions .quiet-btn { height: 32px; }
-.event-actions .top-link { height:32px; }
 .top-link, .dialog-link { display:inline-flex; align-items:center; justify-content:center; text-decoration:none; white-space:nowrap; }
 .event-stats label { display: flex; align-items: center; gap: 7px; height: 38px; padding: 0 11px; border: 1px solid var(--line); border-radius: 9px; color: var(--muted); font-size: .82rem; background: rgba(16,34,58,.55); }
 .event-stats input { width: 42px; border: 0; outline: 0; background: transparent; font-weight: 700; color: var(--text); }
@@ -446,6 +450,8 @@ html[data-theme="light"] body { background: linear-gradient(rgba(65,104,130,.045
 html[data-theme="light"] .topbar { background: rgba(248,252,255,.84); }
 html[data-theme="light"] .creator-notice strong { color:#086a9f; }
 html[data-theme="light"] .creator-notice span { color:#455f72; }
+html[data-theme="light"] .public-links button, html[data-theme="light"] .public-links a { border-color:rgba(22,121,184,.25); color:#086a9f; background:rgba(22,121,184,.07); }
+html[data-theme="light"] .public-links span { color:#fff; background:#1679b8; }
 html[data-theme="light"] .border-reveal-wrap { border-color:rgba(163,101,8,.3); background:rgba(255,255,255,.62); }
 html[data-theme="light"] .border-choice { border-color:rgba(39,78,105,.24); color:#455f72; background:#f7fafc; }
 html[data-theme="light"] .border-choice.is-on { border-color:#a36508; color:#563500; background:#fff0c7; box-shadow:inset 0 0 0 1px rgba(163,101,8,.16); }
@@ -524,6 +530,7 @@ html[data-theme="light"] .search-result:focus { background: rgba(37,99,235,.07);
   .topbar { flex-wrap: wrap; }
   .creator-notice { order: 3; width: 100%; max-width: none; min-width:0; }
   .creator-notice strong { white-space:normal; }
+  .brand-zone { width:100%; }
   .triple-icons { order:4; margin-left:auto; }
   .side-wallpaper { display: none; }
   .topbar { align-items: flex-start; }

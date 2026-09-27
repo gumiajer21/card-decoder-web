@@ -12,15 +12,14 @@
 <body>
   <div class="ambient ambient-a"></div><div class="ambient ambient-b"></div>
   <header class="topbar">
-    <div class="brand"><div class="brand-mark" aria-hidden="true"><span></span><span></span><span></span></div><div><h1>卡片解码者</h1><p>大师决斗在线求解器</p></div></div>
+    <div class="brand-zone"><div class="brand"><div class="brand-mark" aria-hidden="true"><span></span><span></span><span></span></div><div><h1>卡片解码者</h1><p>大师决斗在线求解器</p></div></div><nav class="public-links" aria-label="帮助与项目信息"><button id="faqBtn" type="button"><span>?</span>常见问题</button><button id="changelogBtn" type="button"><span>↻</span>版本记录</button><a href="https://www.bilibili.com/video/BV1pPhU6XEQu" target="_blank" rel="noopener noreferrer"><span>▶</span>B站介绍视频</a></nav></div>
     <div class="creator-notice"><strong>B站 @Gumiajer 制作 · 免费分享</strong><span>非官方研究与活动辅助工具，与科乐美无关；请勿用于商业用途。</span></div>
     <span class="triple-icons" aria-label="点赞、投币、收藏、分享"><img src="bilibili-triple.gif" alt="点赞、投币、收藏、分享"></span>
     <div class="top-controls"><div class="event-stats" aria-label="活动状态">
       <label>题目 <input id="puzzleNumber" type="number" min="1" max="9" value="1" aria-label="题号"><span id="puzzleTotal">/ 9</span></label>
       <label>提示 <input id="hintStock" type="number" min="0" value="3" aria-label="提示库存"></label>
       <label>挑战 <input id="challengeStock" type="number" min="0" value="4" aria-label="挑战库存"></label>
-      <label>高价值 <output id="premiumScore">0</output></label>
-      <label>后段匹配 <output id="progressScore">0</output></label>
+      <output id="premiumScore" hidden>0</output><output id="progressScore" hidden>0</output>
     </div><div class="event-actions" aria-label="工具与模式">
       <button id="settingsBtn" class="quiet-btn" type="button">活动设置</button>
       <button id="activityDataBtn" class="quiet-btn archive-btn" type="button">导入／导出活动</button>
@@ -29,9 +28,6 @@
       <button id="testModeBtn" class="quiet-btn" type="button">测试模式</button>
       <button id="gameModeBtn" class="quiet-btn" type="button">小游戏模式</button>
       <button id="simulationBtn" class="quiet-btn" type="button">规模测试</button>
-      <button id="faqBtn" class="quiet-btn" type="button">常见问题</button>
-      <button id="changelogBtn" class="quiet-btn" type="button">版本记录</button>
-      <a class="quiet-btn top-link" href="https://www.bilibili.com/video/BV1pPhU6XEQu" target="_blank" rel="noopener noreferrer">B站介绍视频</a>
     </div></div>
   </header>
 
