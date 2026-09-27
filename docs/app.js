@@ -867,8 +867,7 @@
       if(!$('#manualBorderReveal')) wrap.innerHTML='<span><b>游戏揭示的完整目标边框</b><small>目标为灵摆卡时，游戏会揭示其完整组合边框。</small></span><select id="manualBorderReveal"></select>';
       const guess=CARDS[index];
       const values=[...new Set(CARDS.filter((card)=>weightOf(card)>0&&(matchMask(card,guess)&1)).map((card)=>card.b))].sort((a,b)=>a-b);
-      $('#manualBorderReveal').innerHTML=values.map((value)=>`<option value="${value}">${escapeHtml(formatBorder(value))}</option>`).join('');
-      if(values.includes(guess.b)) $('#manualBorderReveal').value=String(guess.b);
+      $('#manualBorderReveal').innerHTML='<option value="">请选择游戏揭示的完整边框</option>'+values.map((value)=>`<option value="${value}">${escapeHtml(formatBorder(value))}</option>`).join('');
     }
     $('#manualNumberWrap').hidden=!selected.has('number');
   }
@@ -881,6 +880,7 @@
     }else{
       const index=resolveManualCard();if(index<0){toast('请填写数据库中完整的挑战卡名。');return;}
       const card=CARDS[index],selected=[...$('#manualMatchFields').querySelectorAll('input:checked')].map((input)=>input.value),labels=selected.map((key)=>FIELDS.find((field)=>field.key===key).label);
+      if(selected.includes('border')&&!$('#manualBorderReveal').value){toast('请选择游戏揭示的完整目标边框。');return;}
       const border=selected.includes('border')?formatBorder(Number($('#manualBorderReveal').value)):'-';
       const number=selected.includes('number')?String(clampInt($('#manualNumberValue').value,0,13,card.n)):'-';
       manualImportLines.push(`${puzzle}|挑战|${card.name}|${labels.join(',')}|${border}|${number}`);
@@ -1053,7 +1053,7 @@
   function populateBorderRevealChoices() {
     const guess = CARDS[selectedGuess];
     const values = [...new Set(CARDS.filter((card) => weightOf(card) > 0 && (matchMask(card, guess) & 1)).map((card) => card.b))].sort((a,b)=>a-b);
-    if (!values.includes(borderRevealValue)) borderRevealValue = values.includes(guess.b) ? guess.b : values[0] ?? null;
+    if (!values.includes(borderRevealValue)) borderRevealValue = null;
     $('#borderRevealChoices').innerHTML = values.map((value) => `<button class="border-choice${value === borderRevealValue ? ' is-on' : ''}" type="button" data-border-reveal="${value}">${escapeHtml(formatBorder(value))}</button>`).join('');
   }
 
@@ -1080,6 +1080,7 @@
     if (state.challenges <= 0) { toast('挑战库存不足。'); return; }
     if (testSession) { autoJudgeChallenge(); return; }
     feedbackMask = 0;
+    borderRevealValue = null;
     renderFeedback();
     $('#feedbackDialog').showModal();
   }
@@ -2078,7 +2079,9 @@
     $('#feedbackGrid').addEventListener('click', (event) => {
       const button = event.target.closest('[data-feedback-bit]');
       if (!button) return;
-      feedbackMask ^= Number(button.dataset.feedbackBit);
+      const bit = Number(button.dataset.feedbackBit);
+      feedbackMask ^= bit;
+      if (bit === 1) borderRevealValue = null;
       renderFeedback();
     });
     $('#borderRevealChoices').addEventListener('click', (event) => { const button=event.target.closest('[data-border-reveal]'); if(!button)return; borderRevealValue=Number(button.dataset.borderReveal); populateBorderRevealChoices(); });
