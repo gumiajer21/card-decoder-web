@@ -41,14 +41,14 @@
         <p id="matchedSummary">挑战累计相符 0 / 6</p>
       </div>
       <div class="input-deck">
-        <div class="input-tabs" role="tablist" aria-label="录入方式"><button class="tab is-active" type="button" data-tab="reveal" aria-selected="true">录入揭示</button><button class="tab" type="button" data-tab="challenge" aria-selected="false">记录挑战</button></div>
+        <div class="input-tabs" role="tablist" aria-label="录入方式"><button class="tab is-active" type="button" data-tab="reveal" aria-selected="true">录入揭示</button><button class="tab" type="button" data-tab="challenge" aria-selected="false">记录挑战</button><button id="undoBtn" class="quiet-btn undo-near-input" type="button">撤销上一步</button></div>
         <div class="tab-pane" id="revealPane">
           <div class="input-row"><label><span>字段</span><select id="revealField"></select></label><label class="grow"><span>实际揭示值</span><select id="revealValue"></select></label><label><span>来源</span><select id="revealSource"><option value="initial">初始揭示</option><option value="hint">提示（消耗1次）</option></select></label><button class="quiet-btn" id="randomHintBtn" type="button">随机提示</button><button class="primary-btn" id="addRevealBtn" type="button">加入线索</button></div>
           <p class="form-help" id="rewardHelp">揭示只缩小候选集，不计入累计相符奖励。</p>
         </div>
         <div class="tab-pane" id="challengePane" hidden>
           <div class="search-block"><label class="grow"><span>本次挑战卡</span><input id="cardSearch" type="search" autocomplete="off" placeholder="输入中文或英文卡名"></label><div class="search-results" id="searchResults" hidden></div></div>
-          <div class="selected-card" id="selectedCard" hidden><img id="selectedCardImage" class="card-art" alt="" hidden><div class="grow"><div class="selected-card-heading"><div><span>当前挑战卡</span><strong id="selectedCardName"></strong></div><button id="clearSelectedCard" class="icon-btn" type="button" aria-label="清除选择">×</button></div><div class="selected-card-facts" id="selectedCardFacts"></div><button class="primary-btn challenge-submit" id="recordChallengeBtn" type="button">使用这张卡挑战</button></div></div>
+          <div class="selected-card" id="selectedCard" hidden><img id="selectedCardImage" class="card-art" alt="" hidden><div class="grow"><div class="selected-card-heading"><div><span>当前挑战卡</span><strong id="selectedCardName"></strong></div><div class="selected-card-actions"><button id="copySelectedCard" class="quiet-btn copy-name-btn" type="button">复制卡名</button><button id="clearSelectedCard" class="icon-btn" type="button" aria-label="清除选择">×</button></div></div><div class="selected-card-facts" id="selectedCardFacts"></div><button class="primary-btn challenge-submit" id="recordChallengeBtn" type="button">使用这张卡挑战</button></div></div>
           <p class="form-help challenge-help" id="challengeHelp">选择卡片后执行挑战；测试和小游戏模式会直接生成判定。</p>
         </div>
       </div>
@@ -57,7 +57,7 @@
     <aside class="panel recommendation-panel">
       <div class="section-heading compact"><div><p class="eyebrow">下一步</p><h2>推荐行动</h2></div><select id="recommendMode" class="mode-select" aria-label="推荐模式"><option value="balanced">★ 严格决策</option><option value="points">即时奖励</option><option value="solve">直接通关率</option><option value="info">反馈信息量</option></select></div>
       <p class="mode-guide" id="modeGuide">统一比较提示与挑战；精确时给出证明，超出规模时显示严格上下界。</p>
-      <div class="recommendation-card empty-state" id="recommendationCard"><div class="scan-orbit" aria-hidden="true"><i></i><i></i><i></i><span>6</span></div><img id="recommendImage" class="recommend-image" alt="" hidden><button id="recommendTitle" class="recommend-title" type="button" disabled>录入初始揭示</button><p id="recommendReason">加入本题已经显示的字段，求解器会筛选候选并计算推荐挑战。</p><div class="recommend-card-stats" id="recommendCardStats" hidden></div></div>
+      <div class="recommendation-card empty-state" id="recommendationCard"><div class="scan-orbit" aria-hidden="true"><i></i><i></i><i></i><span>6</span></div><img id="recommendImage" class="recommend-image" alt="" hidden><div class="recommend-heading"><button id="recommendTitle" class="recommend-title" type="button" disabled>录入初始揭示</button><button id="copyRecommendCard" class="quiet-btn copy-name-btn" type="button" hidden>复制卡名</button></div><p id="recommendReason">加入本题已经显示的字段，求解器会筛选候选并计算推荐挑战。</p><div class="recommend-card-stats" id="recommendCardStats" hidden></div></div>
       <div class="metric-grid"><div><span>期望即时得分</span><strong id="metricPoints">—</strong></div><div><span>本次通关概率</span><strong id="metricSolve">—</strong></div><div><span>信息增益</span><strong id="metricInfo">—</strong></div></div>
       <button class="calculate-btn" id="calculateBtn" type="button">计算最佳挑战</button>
       <div class="calc-progress" id="calcProgress" hidden><span></span><em>正在比较合法挑战…</em></div><div class="alternatives" id="alternatives"></div>
@@ -65,7 +65,7 @@
     </aside>
 
     <section class="panel lower-panel">
-      <div class="section-heading compact"><div><p class="eyebrow">分析记录</p><h2>候选与历史</h2></div><div class="lower-actions"><label>卡池 <select id="poolMode"><option value="md">大师决斗游戏内校准卡池</option><option value="all">完整官方怪兽兜底</option></select></label><button id="undoBtn" class="quiet-btn" type="button">撤销</button><button id="resetPuzzleBtn" class="danger-btn" type="button">重置本题</button></div></div>
+      <div class="section-heading compact"><div><p class="eyebrow">分析记录</p><h2>候选与历史</h2></div><div class="lower-actions"><label>卡池 <select id="poolMode"><option value="md">大师决斗游戏内校准卡池</option><option value="all">完整官方怪兽兜底</option></select></label><button id="resetPuzzleBtn" class="danger-btn" type="button">重置本题</button></div></div>
       <p class="pool-caveat" id="poolCaveat"></p>
       <div class="analysis-grid">
         <div class="candidate-table-wrap"><div class="subheading"><h3>卡片数据库</h3><span id="candidateMass"></span></div><div class="database-scope"><label><input id="candidateKnownOnly" type="checkbox"> 仅显示符合当前已知信息</label><div><button id="candidateTableView" class="quiet-btn is-active" type="button">列表</button><button id="candidateGridView" class="quiet-btn" type="button">图格</button></div></div><div class="candidate-tools"><input id="candidateSearch" type="search" placeholder="搜索卡名" aria-label="搜索卡名"><select id="candidateSort" aria-label="候选排序"><option value="probability">卡数／概率优先</option><option value="name">名称</option><option value="numberAsc">数值从小到大</option><option value="numberDesc">数值从大到小</option><option value="attackAsc">攻击力从低到高</option><option value="attackDesc">攻击力从高到低</option><option value="defenseAsc">守备力从低到高</option><option value="defenseDesc">守备力从高到低</option></select></div><div class="database-filters"><div id="dbBorder"></div><div id="dbAttribute"></div><div id="dbRace"></div><div id="dbNumber"></div><div id="dbAttack"></div><div id="dbDefense"></div><button id="clearDbFilters" class="quiet-btn" type="button">清空全部筛选</button></div><p class="filter-help">点击各项展开后自由勾选；同一项内取并集，不同项之间取交集。</p><div class="candidate-table" id="candidateTable"></div></div>
@@ -101,8 +101,9 @@
     <form method="dialog" class="modal-card" id="feedbackForm">
       <header><div><p class="eyebrow">真实活动录入</p><h2>本次挑战判定</h2></div><button id="feedbackCloseBtn" class="icon-btn" type="button" aria-label="关闭">×</button></header>
       <p class="modal-note" id="feedbackNote">只有真实活动需要这一步；测试和小游戏模式会自动生成判定。</p>
+      <div id="feedbackConflict" class="feedback-conflict" role="alert" hidden>这组反馈与当前卡池矛盾，请检查勾选项和灵摆边框判定。</div>
       <div class="feedback-grid" id="feedbackGrid" aria-label="挑战反馈"></div>
-      <div class="special-reveals" id="specialReveals" hidden><label id="pendulumExactWrap" class="pendulum-check" hidden><input id="pendulumBorderExact" type="checkbox" checked><span><b>边框也猜中了</b><small>请看游戏最终判定；若边框显示不相符，就取消勾选，表示目标不含灵摆。</small></span></label><label id="numberRevealWrap" hidden><span>目标显示的等级／阶级／连接</span><select id="numberReveal"></select></label></div>
+      <div class="special-reveals" id="specialReveals" hidden><label id="pendulumExactWrap" class="pendulum-check" hidden><input id="pendulumBorderExact" type="checkbox" checked><span><b>完整边框也相符</b><small>若只有附属边框点亮、最终却判定不相符，请取消勾选；这可能发生在目标与挑战卡只有一方含灵摆时。</small></span></label><label id="numberRevealWrap" hidden><span>目标显示的等级／阶级／连接</span><select id="numberReveal"></select></label></div>
       <footer><button id="feedbackCancelBtn" class="quiet-btn" type="button">取消</button><button class="primary-btn" id="confirmFeedbackBtn" type="submit">保存判定并扣除挑战</button></footer>
     </form>
   </dialog>
@@ -115,6 +116,7 @@
       <footer><button id="clearArchiveBtn" class="danger-btn" type="button">清除旧活动档案</button><button id="exportActivityBtn" class="quiet-btn" type="button">导出当前活动</button><button id="importActivityBtn" class="quiet-btn" type="button">导入活动记录</button><button id="historyDoneBtn" class="primary-btn" type="button">完成</button></footer>
     </div>
   </dialog>
+  <dialog id="groupDialog" class="modal group-modal"><div class="modal-card"><header><div><p class="eyebrow">六项完全相同</p><h2 id="groupDialogTitle">同组卡片</h2></div><button id="groupDialogClose" class="icon-btn" type="button" aria-label="关闭">×</button></header><p class="modal-note" id="groupDialogSummary"></p><div id="groupDialogList" class="group-card-list"></div><footer><button id="groupDialogDone" class="primary-btn" type="button">完成</button></footer></div></dialog>
   <dialog id="activityDataDialog" class="modal">
     <div class="modal-card compact-modal"><header><div><p class="eyebrow">活动存档</p><h2>导入／导出活动</h2></div><button id="activityDataCloseBtn" class="icon-btn" type="button" aria-label="关闭">×</button></header><div class="archive-actions"><button id="prominentExportBtn" class="primary-btn" type="button">导出当前活动</button><button id="prominentImportBtn" class="quiet-btn" type="button">导入 JSON／文本记录</button><button id="manualImportBtn" class="quiet-btn" type="button">逐项补录行动</button></div><p class="modal-note">浏览器通常会自动保存本机进度；这里用于换设备、换浏览器，或根据游戏画面重新补录。</p></div>
   </dialog>

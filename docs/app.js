@@ -349,6 +349,28 @@
     return mask;
   }
 
+  function canTogglePendulumBorder(border) {
+    return Boolean(border & 127) && !(border & 32);
+  }
+
+  async function copyCardName(card) {
+    if (!card) return;
+    try {
+      await navigator.clipboard.writeText(card.name);
+      toast(`已复制卡名：${card.name}`);
+    } catch {
+      const input = document.createElement('textarea');
+      input.value = card.name;
+      input.style.position = 'fixed';
+      input.style.opacity = '0';
+      document.body.appendChild(input);
+      input.select();
+      const copied = document.execCommand('copy');
+      input.remove();
+      toast(copied ? `已复制卡名：${card.name}` : '复制失败，请手动选择卡名。');
+    }
+  }
+
   function migrateChallengeSemantics() {
     if (challengeSemanticsMigrated) return;
     const migrateLog = (log) => {
@@ -623,8 +645,8 @@
     container.innerHTML = (grid ? '' : `<div class="candidate-row header"><span>卡图</span><span>代表卡</span><span>边框</span><span>属性</span><span>种族</span><span>数值</span><span>攻／守</span><span>卡数／占当前范围</span></div>`) + top.map((index) => {
       const card = CARDS[index];
       const probability = total ? weightOf(card) / total : 0;
-      if (grid) return `<article class="database-card"><img data-card-index="${index}" alt="${escapeAttr(card.name)}卡图"><strong title="${escapeAttr(card.names.join('、'))}">${escapeHtml(card.name)}</strong><small>${escapeHtml(formatBorder(card.b))} · ${escapeHtml(DATA.labels.attribute[card.a] || card.a)} · ${escapeHtml(DATA.labels.race[card.r] || card.r)}</small><span>${card.n} · ${formatStat(card.atk)}／${formatStat(card.def)} · ${weightOf(card)}张</span></article>`;
-      return `<div class="candidate-row"><img class="candidate-thumb" data-card-index="${index}" alt="${escapeAttr(card.name)}卡图"><strong title="${escapeAttr(card.names.join('、'))}">${escapeHtml(card.name)}</strong><span>${escapeHtml(formatBorder(card.b))}</span><span>${escapeHtml(DATA.labels.attribute[card.a] || card.a)}</span><span>${escapeHtml(DATA.labels.race[card.r] || card.r)}</span><span>${card.n}</span><span>${formatStat(card.atk)}／${formatStat(card.def)}</span><span class="prob">${weightOf(card).toLocaleString('zh-CN')}张 · ${formatPercent(probability)}</span></div>`;
+      if (grid) return `<article class="database-card"><img data-card-index="${index}" alt="${escapeAttr(card.name)}卡图"><strong title="${escapeAttr(card.names.join('、'))}">${escapeHtml(card.name)}</strong><small>${escapeHtml(formatBorder(card.b))} · ${escapeHtml(DATA.labels.attribute[card.a] || card.a)} · ${escapeHtml(DATA.labels.race[card.r] || card.r)}</small><span>${card.n} · ${formatStat(card.atk)}／${formatStat(card.def)}</span><button class="group-open-btn" type="button" data-group-index="${index}">查看同组 ${weightOf(card)} 张</button></article>`;
+      return `<div class="candidate-row"><img class="candidate-thumb" data-card-index="${index}" alt="${escapeAttr(card.name)}卡图"><strong title="${escapeAttr(card.names.join('、'))}">${escapeHtml(card.name)}</strong><span>${escapeHtml(formatBorder(card.b))}</span><span>${escapeHtml(DATA.labels.attribute[card.a] || card.a)}</span><span>${escapeHtml(DATA.labels.race[card.r] || card.r)}</span><span>${card.n}</span><span>${formatStat(card.atk)}／${formatStat(card.def)}</span><button class="group-open-btn" type="button" data-group-index="${index}">${weightOf(card).toLocaleString('zh-CN')}张 · ${formatPercent(probability)}</button></div>`;
     }).join('');
     hydrateCardImages(container);
   }
@@ -634,7 +656,7 @@
       const container = $(id);
       if (container.dataset.ready) continue;
       const values = [...new Set(source.map((index) => fieldValue(CARDS[index], field)))].sort((a,b)=>['number','attack','defense'].includes(field)?Number(a)-Number(b):formatValue(field,a).localeCompare(formatValue(field,b),'zh-CN'));
-      container.innerHTML = `<details class="filter-picker"><summary><span>${label}</span><b data-filter-count>全部</b></summary><div class="filter-picker-body"><input type="search" placeholder="搜索${label}" aria-label="搜索${label}"><div class="filter-options">${values.map((value)=>`<label data-filter-label="${escapeAttr(normalizeSearch(formatValue(field,value)))}"><input type="checkbox" value="${value}"><span>${escapeHtml(formatValue(field,value))}</span></label>`).join('')}</div></div></details>`;
+      container.innerHTML = `<details class="filter-picker"><summary><span>${label}</span><b data-filter-count>全部</b></summary><div class="filter-picker-body"><input type="search" placeholder="搜索${label}" aria-label="搜索${label}"><div class="filter-actions"><button type="button" data-filter-action="all">全选</button><button type="button" data-filter-action="invert">反选</button><button type="button" data-filter-action="none">清空</button></div><div class="filter-options">${values.map((value)=>`<label data-filter-label="${escapeAttr(normalizeSearch(formatValue(field,value)))}"><input type="checkbox" value="${value}"><span>${escapeHtml(formatValue(field,value))}</span></label>`).join('')}</div></div></details>`;
       container.dataset.ready='true';
     }
     updateFilterCounts();
@@ -642,6 +664,18 @@
 
   function updateFilterCounts() {
     $$('.filter-picker').forEach((picker)=>{const count=picker.querySelectorAll('input[type="checkbox"]:checked').length;picker.querySelector('[data-filter-count]').textContent=count?`已选 ${count}`:'全部';});
+  }
+
+  function openGroupDialog(index) {
+    const card = CARDS[Number(index)];
+    if (!card) return;
+    $('#groupDialogTitle').textContent = card.name;
+    $('#groupDialogSummary').textContent = `该判定组在当前卡池包含 ${weightOf(card).toLocaleString('zh-CN')} 张记录；以下列出数据库保存的全部卡名／别名和卡片密码。它们的六项判定完全相同，猜中其中任意一张均算正确。`;
+    const names = [...new Set(card.names || [card.name])];
+    const ids = [...new Set(card.ids || [])];
+    $('#groupDialogList').innerHTML = `<h3 class="group-list-heading">卡名／别名</h3>${names.map((name) => `<div class="group-card-entry"><span>${escapeHtml(name)}</span><button type="button" data-copy-name="${escapeAttr(name)}">复制</button></div>`).join('')}`
+      + (ids.length ? `<h3 class="group-list-heading">卡片密码</h3>${ids.map((id) => `<div class="group-card-entry"><span>卡片密码</span><code>${id}</code></div>`).join('')}` : '');
+    if (!$('#groupDialog').open) $('#groupDialog').showModal();
   }
 
   function historyItemHtml(log, expanded = false) {
@@ -672,7 +706,7 @@
       container.innerHTML = `<div class="empty-inline">当前活动还没有记录。</div>`;
       return;
     }
-    container.innerHTML = [...history].reverse().slice(0, 8).map((log) => historyItemHtml(log)).join('');
+    container.innerHTML = [...history].reverse().map((log) => historyItemHtml(log)).join('');
     hydrateCardImages(container);
   }
 
@@ -803,7 +837,9 @@
   function updateManualChallengeSpecials() {
     const selected=new Set([...$('#manualMatchFields').querySelectorAll('input:checked')].map((input)=>input.value));
     const index=resolveManualCard();
-    $('#manualPendulumExactWrap').hidden=!selected.has('border')||index<0||!(CARDS[index].b&128);
+    $('#manualPendulumExactWrap').hidden=!selected.has('border')||index<0||!canTogglePendulumBorder(CARDS[index].b);
+    $('#manualPendulumExactWrap b').textContent='完整边框严格相符';
+    $('#manualPendulumExactWrap small').textContent='若灵摆与非灵摆之间仅附属边框点亮、最终不算相符，请取消勾选。';
     $('#manualNumberWrap').hidden=!selected.has('number');
   }
 
@@ -854,6 +890,8 @@
     $('#recommendTitle').textContent = state.known && Object.keys(state.known).length ? '等待计算' : '录入初始揭示';
     $('#recommendTitle').disabled = true;
     $('#recommendTitle').dataset.cardIndex = '';
+    $('#copyRecommendCard').hidden = true;
+    $('#copyRecommendCard').dataset.cardIndex = '';
     $('#recommendImage').hidden = true;
     $('#recommendReason').textContent = state.known && Object.keys(state.known).length ? '点击下方按钮，比较当前卡池中的合法挑战。' : '加入本题已经显示的字段，求解器会筛选候选并计算推荐挑战。';
     $('#recommendCardStats').hidden = true;
@@ -949,6 +987,7 @@
     $('#searchResults').hidden = true;
     $('#selectedCard').hidden = false;
     $('#selectedCardName').textContent = card.name;
+    $('#copySelectedCard').dataset.cardIndex = String(selectedGuess);
     $('#selectedCardFacts').innerHTML = FIELDS.map((field) => `<div><span>${escapeHtml(field.label)}</span><strong>${escapeHtml(formatValue(field.key, fieldValue(card, field.key)))}</strong></div>`).join('');
     setCardImage($('#selectedCardImage'), card);
     renderTestMode();
@@ -971,10 +1010,11 @@
     $('#feedbackGrid').innerHTML = FIELDS.map((field) => `<button class="feedback-toggle${feedbackMask & field.bit ? ' is-on' : ''}" type="button" data-feedback-bit="${field.bit}"><span>${field.label}</span><small>${escapeHtml(formatValue(field.key, fieldValue(guess, field.key)))}</small></button>`).join('');
     const borderOn = Boolean(feedbackMask & 1);
     const numberOn = Boolean(feedbackMask & 8);
+    $('#feedbackConflict').hidden = true;
     $('#specialReveals').hidden = !(borderOn || numberOn);
-    $('#pendulumExactWrap').hidden = !borderOn || !(guess.b & 128);
+    $('#pendulumExactWrap').hidden = !borderOn || !canTogglePendulumBorder(guess.b);
     $('#numberRevealWrap').hidden = !numberOn;
-    if (borderOn && guess.b & 128) $('#feedbackNote').textContent = '这张挑战卡含灵摆。边框点亮后，请额外确认游戏是否把“边框”计为严格相符。';
+    if (borderOn && canTogglePendulumBorder(guess.b)) $('#feedbackNote').textContent = '边框点亮只代表基础边框重叠。无论挑战卡是否含灵摆，都请根据游戏最终判定确认完整边框是否真正相符。';
     else $('#feedbackNote').textContent = '勾选游戏中亮起的项目；测试和小游戏模式会自动生成判定。';
     if (numberOn) populateSpecialReveal('number');
   }
@@ -1012,14 +1052,20 @@
     if (state.logs.some((log) => log.type === 'challenge' && log.guess === selectedGuess)) { toast('同题重复挑战这张卡不会扣次数，也不会留下记录。'); return; }
     const guess = CARDS[selectedGuess];
     const automaticExact=$('#pendulumBorderExact').dataset.autoExact;
-    const borderExact = automaticExact !== undefined ? automaticExact === 'true' : (!(feedbackMask & 1) || !(guess.b & 128) || $('#pendulumBorderExact').checked);
+    const borderExact = automaticExact !== undefined ? automaticExact === 'true' : (!(feedbackMask & 1) || !canTogglePendulumBorder(guess.b) || $('#pendulumBorderExact').checked);
     delete $('#pendulumBorderExact').dataset.autoExact;
     const borderReveal = feedbackMask & 1 ? (borderExact ? guess.b : (guess.b ^ 128)) : null;
     const numberReveal = feedbackMask & 8 ? Number($('#numberReveal').value) : null;
     if ((feedbackMask & 8) && Number.isNaN(numberReveal)) { toast('请录入目标显示的等级／阶级／连接值。'); return; }
     const trial = clone(state);
     trial.logs.push({ type: 'challenge', guess: selectedGuess, mask: feedbackMask, borderReveal, numberReveal });
-    if (!candidateIndices(trial).length) { toast('这组反馈与当前卡池冲突，请检查勾选，或切换完整卡池。'); return; }
+    if (!candidateIndices(trial).length) {
+      const alert = $('#feedbackConflict');
+      alert.textContent = '这组反馈与当前卡池矛盾：请检查点亮项目、等级／阶级／连接值，以及灵摆边框是否真正相符。';
+      alert.hidden = false;
+      alert.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+      return;
+    }
 
     pushUndo();
     const strictMask = feedbackMask & 1 && CARDS[selectedGuess].b !== borderReveal ? feedbackMask & ~1 : feedbackMask;
@@ -1400,6 +1446,8 @@
     $('#recommendTitle').textContent = recommendHint ? '先使用1次提示' : chooseAny ? `以下 ${equivalentChoices.length} 张任选其一` : card.name;
     $('#recommendTitle').disabled = recommendHint || chooseAny;
     $('#recommendTitle').dataset.cardIndex = recommendHint || chooseAny ? '' : String(best.index);
+    $('#copyRecommendCard').hidden = recommendHint || chooseAny;
+    $('#copyRecommendCard').dataset.cardIndex = recommendHint || chooseAny ? '' : String(best.index);
     if (chooseAny) { const image=$('#recommendImage'); image.hidden=false; image.src='card-back.png'; image.dataset.zoomable='false'; }
     else setCardImage($('#recommendImage'), card, !recommendHint);
     $('#recommendReason').textContent = chooseAny
@@ -1426,8 +1474,9 @@
     $('#metricSolve').textContent = recommendHint ? '0%' : formatPercent(best.solve);
     $('#metricInfo').textContent = `${(recommendHint ? hint.entropy : best.info).toFixed(2)} bit`;
     $('#alternatives').innerHTML = chooseAny
-      ? equivalentChoices.slice(0,8).map((index,offset)=>`<button class="alternative" type="button" data-recommend-index="${index}"><div class="alternative-title"><b>=</b><span>${escapeHtml(CARDS[index].name)}</span></div><div class="alternative-metrics"><span><small>关系</small>并列最优</span><span><small>操作</small>点击选择</span></div></button>`).join('')
-      : recommendations.slice(recommendHint ? 0 : 1, recommendHint ? 3 : 4).map((item, offset) => `<button class="alternative" type="button" data-recommend-index="${item.index}"><div class="alternative-title"><b>${offset + 1}</b><span>${escapeHtml(CARDS[item.index].name)}</span></div><div class="alternative-metrics"><span><small>期望</small>${item.points.toFixed(2)}</span><span><small>通关</small>${formatPercent(item.solve)}</span><span><small>信息</small>${item.info.toFixed(2)} bit</span></div></button>`).join('');
+      ? equivalentChoices.slice(0,8).map((index)=>`<div class="alternative"><img class="alternative-thumb" data-card-index="${index}" alt="${escapeAttr(CARDS[index].name)}"><button class="alternative-body" type="button" data-recommend-index="${index}"><div class="alternative-title"><b>=</b><span>${escapeHtml(CARDS[index].name)}</span></div><div class="alternative-metrics"><span><small>关系</small>并列最优</span><span><small>操作</small>点击选择</span></div></button><button class="quiet-btn alternative-copy" type="button" data-copy-card-index="${index}">复制卡名</button></div>`).join('')
+      : recommendations.slice(recommendHint ? 0 : 1, recommendHint ? 3 : 4).map((item, offset) => `<div class="alternative"><img class="alternative-thumb" data-card-index="${item.index}" alt="${escapeAttr(CARDS[item.index].name)}"><button class="alternative-body" type="button" data-recommend-index="${item.index}"><div class="alternative-title"><b>${recommendHint ? `挑战 ${offset + 1}` : offset + 2}</b><span>${escapeHtml(CARDS[item.index].name)}</span></div><div class="alternative-metrics"><span><small>期望</small>${item.points.toFixed(2)}</span><span><small>通关</small>${formatPercent(item.solve)}</span><span><small>信息</small>${item.info.toFixed(2)} bit</span></div></button><button class="quiet-btn alternative-copy" type="button" data-copy-card-index="${item.index}">复制卡名</button></div>`).join('');
+    hydrateCardImages($('#alternatives'));
     $('#methodNote').textContent = hint.method === 'restricted-horizon'
       ? `当前为受限深度自适应策略树：提示与挑战使用相同递归和终止规则；结果是合法可行策略，不等于全局最优证明。`
       : `严格模式按预期解题数、首次相符项数、负行动数作词典序比较；信息熵只用于解释。`;
@@ -1988,6 +2037,7 @@
       if (button) selectGuess(Number(button.dataset.cardIndex));
     });
     $('#clearSelectedCard').addEventListener('click', clearGuess);
+    $('#copySelectedCard').addEventListener('click', () => copyCardName(CARDS[Number($('#copySelectedCard').dataset.cardIndex)]));
     $('#feedbackGrid').addEventListener('click', (event) => {
       const button = event.target.closest('[data-feedback-bit]');
       if (!button) return;
@@ -2005,7 +2055,10 @@
       if (!Number.isInteger(index)) return;
       switchTab('challenge'); selectGuess(index); window.scrollTo({ top: 0, behavior: 'smooth' });
     });
+    $('#copyRecommendCard').addEventListener('click', () => copyCardName(CARDS[Number($('#copyRecommendCard').dataset.cardIndex)]));
     $('#alternatives').addEventListener('click', (event) => {
+      const copyButton = event.target.closest('[data-copy-card-index]');
+      if (copyButton) { copyCardName(CARDS[Number(copyButton.dataset.copyCardIndex)]); return; }
       const button = event.target.closest('[data-recommend-index]');
       if (!button) return;
       switchTab('challenge');
@@ -2025,13 +2078,18 @@
     $('#candidateKnownOnly').addEventListener('change', renderCandidates);
     $('.database-filters').addEventListener('change',(event)=>{if(event.target.matches('input[type="checkbox"]')){updateFilterCounts();renderCandidates();}});
     $('.database-filters').addEventListener('input',(event)=>{if(!event.target.matches('.filter-picker input[type="search"]'))return;const query=normalizeSearch(event.target.value);event.target.closest('.filter-picker').querySelectorAll('[data-filter-label]').forEach((label)=>{label.hidden=query&&!label.dataset.filterLabel.includes(query);});});
+    $('.database-filters').addEventListener('click',(event)=>{const action=event.target.closest('[data-filter-action]');if(!action)return;const picker=action.closest('.filter-picker');const boxes=[...picker.querySelectorAll('[data-filter-label]:not([hidden]) input[type="checkbox"]')];boxes.forEach((box)=>{box.checked=action.dataset.filterAction==='all'?true:action.dataset.filterAction==='none'?false:!box.checked;});updateFilterCounts();renderCandidates();});
     $('#candidateSort').addEventListener('change', renderCandidates);
     $('#candidateTableView').addEventListener('click',()=>{$('#candidateTable').dataset.view='table';$('#candidateTableView').classList.add('is-active');$('#candidateGridView').classList.remove('is-active');renderCandidates();});
     $('#candidateGridView').addEventListener('click',()=>{$('#candidateTable').dataset.view='grid';$('#candidateGridView').classList.add('is-active');$('#candidateTableView').classList.remove('is-active');renderCandidates();});
+    $('#candidateTable').addEventListener('click',(event)=>{const groupButton=event.target.closest('[data-group-index]');if(groupButton)openGroupDialog(Number(groupButton.dataset.groupIndex));});
     $('#clearDbFilters').addEventListener('click',()=>{$('#candidateSearch').value='';$('.database-filters').querySelectorAll('input[type="checkbox"]').forEach((input)=>{input.checked=false;});$('.database-filters').querySelectorAll('input[type="search"]').forEach((input)=>{input.value='';});updateFilterCounts();renderCandidates();});
     $('#openHistoryBtn').addEventListener('click', openHistoryArchive);
     $('#historyCloseBtn').addEventListener('click', () => $('#historyDialog').close());
     $('#historyDoneBtn').addEventListener('click', () => $('#historyDialog').close());
+    $('#groupDialogClose').addEventListener('click', () => $('#groupDialog').close());
+    $('#groupDialogDone').addEventListener('click', () => $('#groupDialog').close());
+    $('#groupDialogList').addEventListener('click', (event) => { const button=event.target.closest('[data-copy-name]'); if(button) copyCardName({name:button.dataset.copyName}); });
     $('#exportActivityBtn').addEventListener('click', exportActivity);
     $('#importActivityBtn').addEventListener('click', () => { $('#activityImportText').value=''; $('#importDialog').showModal(); });
     $('#importCloseBtn').addEventListener('click',()=>$('#importDialog').close());
