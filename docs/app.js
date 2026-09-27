@@ -1047,7 +1047,10 @@
   function populateSpecialReveal(field) {
     const guess = CARDS[selectedGuess];
     const values = new Set();
-    for (const index of candidateCache) {
+    const source = field === 'border'
+      ? CARDS.map((_, index) => index).filter((index) => weightOf(CARDS[index]) > 0)
+      : candidateCache;
+    for (const index of source) {
       const target = CARDS[index];
       const matches = field === 'border' ? Boolean(matchMask(target, guess) & 1) : Boolean(target.nm & guess.nm);
       if (matches) values.add(fieldValue(target, field));
