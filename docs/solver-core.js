@@ -30,7 +30,7 @@
 
   function matchMask(target, guess) {
     let mask = 0;
-    if ((target.b & 128) ? Boolean(target.b & guess.b & 127) : target.b === guess.b) mask |= 1;
+    if (target.b & guess.b) mask |= 1;
     if (target.a === guess.a) mask |= 2;
     if (target.r === guess.r) mask |= 4;
     if (target.nm & guess.nm) mask |= 8;
@@ -40,7 +40,9 @@
   }
 
   function strictMatchMask(target, guess) {
-    return matchMask(target, guess);
+    let mask = matchMask(target, guess);
+    if (target.b !== guess.b) mask &= ~1;
+    return mask;
   }
 
   function thresholdGain(config, puzzle, beforeMask, afterMask) {

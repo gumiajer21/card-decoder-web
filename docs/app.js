@@ -145,16 +145,6 @@
     sessionStorage.setItem(SESSION_HISTORY_KEY, JSON.stringify(session.slice(-500)));
   }
 
-  function syncCurrentActivityHistory() {
-    const unrelated = readSessionHistory().filter((item) => item.activityId !== state.activityId);
-    sessionStorage.setItem(SESSION_HISTORY_KEY, JSON.stringify([...unrelated, ...(state.activityHistory || [])].slice(-500)));
-  }
-
-  function removeActivityFromSession(activityId) {
-    const remaining = readSessionHistory().filter((item) => item.activityId !== activityId);
-    sessionStorage.setItem(SESSION_HISTORY_KEY, JSON.stringify(remaining));
-  }
-
   function clampInt(value, min, max, fallback) {
     const number = Number(value);
     return Number.isFinite(number) ? Math.min(max, Math.max(min, Math.round(number))) : fallback;
@@ -344,7 +334,7 @@
 
   function matchMask(target, guess) {
     let mask = 0;
-    if ((target.b & 128) ? Boolean(target.b & guess.b & 127) : target.b === guess.b) mask |= 1;
+    if (target.b & guess.b) mask |= 1;
     if (target.a === guess.a) mask |= 2;
     if (target.r === guess.r) mask |= 4;
     if (target.nm & guess.nm) mask |= 8;
@@ -354,7 +344,13 @@
   }
 
   function strictMatchMask(target, guess) {
-    return matchMask(target, guess);
+    let mask = matchMask(target, guess);
+    if (target.b !== guess.b) mask &= ~1;
+    return mask;
+  }
+
+  function canTogglePendulumBorder(border) {
+    return Boolean(border & 127) && !(border & 32);
   }
 
   async function copyCardName(card) {
@@ -378,9 +374,9 @@
   function migrateChallengeSemantics() {
     if (challengeSemanticsMigrated) return;
     const migrateLog = (log) => {
-      if (log.type !== 'challenge') return;
+      if (log.type !== 'challenge' || log.strictMask != null) return;
       log.strictMask = log.mask;
-      if (log.borderUnknown) delete log.borderUnknown;
+      if ((log.mask & 1) && log.borderReveal != null && CARDS[log.guess] && CARDS[log.guess].b !== Number(log.borderReveal)) log.strictMask &= ~1;
     };
     (state.activityHistory || []).forEach(migrateLog);
     let matchedMask = 0;
@@ -706,7 +702,8 @@
     const guess = CARDS[log.guess];
     const strictMask = log.strictMask == null ? log.mask : log.strictMask;
     const matchedFields = FIELDS.filter((field) => strictMask & field.bit);
-    const borderStatus = log.borderReveal != null && (log.mask & 1) ? ` · 边框揭示为${formatBorder(log.borderReveal)}` : '';
+    const partialBorder = Boolean((log.mask & 1) && !(strictMask & 1));
+    const borderStatus = log.borderUnknown ? ' · 边框严格状态未知' : partialBorder ? ' · 边框仅部分点亮' : '';
     const matched = matchedFields.map((field) => field.label).join('、') || '无相符项';
     return `<article class="history-item history-challenge">${guess ? `<img data-card-index="${log.guess}" alt="${escapeAttr(guess.name)}卡图">` : '<div class="history-symbol">?</div>'}<div><header><strong>第${puzzle}题 · ${escapeHtml(guess?.name || '未知卡')}</strong><time>${log.time || ''}</time></header><p>${matched}${borderStatus}${log.delta ? ` · <b>+${log.delta}</b>` : ''}</p><div class="history-match-chips">${matchedFields.map((field) => `<span>${field.icon} ${escapeHtml(field.label)}</span>`).join('') || '<span>0项严格相符</span>'}</div>${expanded && log.candidates != null ? `<small>操作前约 ${Number(log.candidates).toLocaleString('zh-CN')} 张候选</small>` : ''}</div></article>`;
   }
@@ -794,7 +791,7 @@
         if(guess<0)throw new Error(`第 ${lineNumber+1} 行找不到挑战卡“${parts[2]}”。`);
         let mask=0;for(const token of (parts[3]||'').split(/[,，/／]+/).map((item)=>item.trim()).filter(Boolean)){const field=fieldAliases.get(token);if(!field)throw new Error(`第 ${lineNumber+1} 行无法识别点亮字段“${token}”。`);mask|=field.bit;}
         const borderReveal=mask&1?parseImportedValue('border',parts[4]):null,numberReveal=mask&8?parseImportedValue('number',parts[5]):null;
-        const strictMask=mask,before=next.matchedMask,after=before|strictMask,solved=strictMask===63;
+        const strictMask=mask&1&&CARDS[guess].b!==borderReveal?mask&~1:mask,before=next.matchedMask,after=before|strictMask,solved=strictMask===63;
         let delta=thresholdGain(before,after,next.config,puzzle);if(solved)delta+=solveReward(next.config,puzzle);
         next.matchedMask=after;next.challenges-=1;next.puzzleScore+=delta;next.totalScore+=delta;if(isPremiumPuzzle(puzzle,next.config))next.premiumScore+=delta;else next.progressScore+=delta;next.solved=solved;
         for(const field of FIELDS)if(mask&field.bit)next.known[field.key]={value:field.key==='border'?borderReveal:field.key==='number'?numberReveal:fieldValue(CARDS[guess],field.key),source:'challenge'};
@@ -856,14 +853,9 @@
   function updateManualChallengeSpecials() {
     const selected=new Set([...$('#manualMatchFields').querySelectorAll('input:checked')].map((input)=>input.value));
     const index=resolveManualCard();
-    const borderWrap=$('#manualPendulumExactWrap');
-    borderWrap.hidden=!selected.has('border')||index<0;
-    if(!borderWrap.hidden){
-      if(!$('#manualBorderReveal')) borderWrap.innerHTML='<span><b>游戏揭示的完整目标边框</b><small>目标为灵摆卡时，命中任一组成边框即算相符。</small></span><select id="manualBorderReveal"></select>';
-      const guess=CARDS[index],values=[...new Set(CARDS.filter((card)=>weightOf(card)>0&&(matchMask(card,guess)&1)).map((card)=>card.b))];
-      $('#manualBorderReveal').innerHTML=values.sort((a,b)=>a-b).map((value)=>`<option value="${value}">${escapeHtml(formatBorder(value))}</option>`).join('');
-      if(values.includes(guess.b)) $('#manualBorderReveal').value=String(guess.b);
-    }
+    $('#manualPendulumExactWrap').hidden=!selected.has('border')||index<0||!canTogglePendulumBorder(CARDS[index].b);
+    $('#manualPendulumExactWrap b').textContent='完整边框严格相符';
+    $('#manualPendulumExactWrap small').textContent='若灵摆与非灵摆之间仅附属边框点亮、最终不算相符，请取消勾选。';
     $('#manualNumberWrap').hidden=!selected.has('number');
   }
 
@@ -875,7 +867,7 @@
     }else{
       const index=resolveManualCard();if(index<0){toast('请填写数据库中完整的挑战卡名。');return;}
       const card=CARDS[index],selected=[...$('#manualMatchFields').querySelectorAll('input:checked')].map((input)=>input.value),labels=selected.map((key)=>FIELDS.find((field)=>field.key===key).label);
-      const border=selected.includes('border')?formatBorder(Number($('#manualBorderReveal').value)):'-';
+      const border=selected.includes('border')?($('#manualPendulumExact').checked?formatBorder(card.b):formatBorder(card.b^128)):'-';
       const number=selected.includes('number')?String(clampInt($('#manualNumberValue').value,0,13,card.n)):'-';
       manualImportLines.push(`${puzzle}|挑战|${card.name}|${labels.join(',')}|${border}|${number}`);
     }
@@ -1004,7 +996,8 @@
   function selectGuess(index) {
     selectedGuess = Number(index);
     feedbackMask = 0;
-    $('#borderReveal').innerHTML = '';
+    $('#pendulumBorderExact').checked = false;
+    delete $('#pendulumBorderExact').dataset.autoExact;
     const card = CARDS[selectedGuess];
     $('#cardSearch').value = card.name;
     $('#searchResults').hidden = true;
@@ -1035,12 +1028,12 @@
     const numberOn = Boolean(feedbackMask & 8);
     $('#feedbackConflict').hidden = true;
     $('#specialReveals').hidden = !(borderOn || numberOn);
-    $('#borderRevealWrap').hidden = !borderOn;
+    const exactCanBeObserved = borderOn && canTogglePendulumBorder(guess.b) && feedbackMask === 63;
+    $('#pendulumExactWrap').hidden = !exactCanBeObserved;
     $('#numberRevealWrap').hidden = !numberOn;
-    if (borderOn) {
-      populateSpecialReveal('border');
-      $('#feedbackNote').textContent = '目标为灵摆卡时，命中任一组成边框即算相符；请按游戏画面录入揭示出的完整目标边框。';
-    } else $('#feedbackNote').textContent = '勾选游戏中亮起的项目；测试和小游戏模式会自动生成判定。';
+    if (borderOn && canTogglePendulumBorder(guess.b) && feedbackMask !== 63) $('#feedbackNote').textContent = '边框虽然点亮，但其他项并未全部相符，因此无法判断灵摆部分是否一致。求解器会同时保留灵摆与非灵摆两种可能。';
+    else if (exactCanBeObserved) $('#feedbackNote').textContent = '六项均已点亮。请只根据游戏是否判定完全猜中，确认灵摆部分是否也严格相符。';
+    else $('#feedbackNote').textContent = '勾选游戏中亮起的项目；测试和小游戏模式会自动生成判定。';
     if (numberOn) populateSpecialReveal('number');
   }
 
@@ -1049,15 +1042,15 @@
     const values = new Set();
     for (const index of candidateCache) {
       const target = CARDS[index];
-      const matches = field === 'border' ? Boolean(matchMask(target, guess) & 1) : Boolean(target.nm & guess.nm);
-      if (matches) values.add(fieldValue(target, field));
+      const matches = Boolean(target.nm & guess.nm);
+      if (matches) values.add(target.n);
     }
     const select = $('#numberReveal');
     const currentKnown = state.known[field]?.value;
     select.innerHTML = [...values].sort((a, b) => a - b).map((value) => `<option value="${value}">${escapeHtml(formatValue(field, value))}</option>`).join('');
     if (currentKnown != null && values.has(Number(currentKnown))) select.value = String(currentKnown);
     else {
-      const guessed = fieldValue(guess, field);
+      const guessed = guess.n;
       if (values.has(guessed)) select.value = String(guessed);
     }
   }
@@ -1076,21 +1069,25 @@
     if (state.challenges <= 0) { toast('挑战库存不足。'); return; }
     if (state.logs.some((log) => log.type === 'challenge' && log.guess === selectedGuess)) { toast('同题重复挑战这张卡不会扣次数，也不会留下记录。'); return; }
     const guess = CARDS[selectedGuess];
-    const borderReveal = feedbackMask & 1 ? Number($('#borderReveal').value) : null;
+    const automaticExact=$('#pendulumBorderExact').dataset.autoExact;
+    const borderUnknown = automaticExact === undefined && Boolean(feedbackMask & 1) && canTogglePendulumBorder(guess.b) && feedbackMask !== 63;
+    const borderExact = automaticExact !== undefined ? automaticExact === 'true' : (borderUnknown ? null : (!(feedbackMask & 1) || !canTogglePendulumBorder(guess.b) || $('#pendulumBorderExact').checked));
+    delete $('#pendulumBorderExact').dataset.autoExact;
+    const borderReveal = feedbackMask & 1 && !borderUnknown ? (borderExact ? guess.b : (guess.b ^ 128)) : null;
     const numberReveal = feedbackMask & 8 ? Number($('#numberReveal').value) : null;
     if ((feedbackMask & 8) && Number.isNaN(numberReveal)) { toast('请录入目标显示的等级／阶级／连接值。'); return; }
     const trial = clone(state);
-    trial.logs.push({ type: 'challenge', guess: selectedGuess, mask: feedbackMask, borderReveal, numberReveal });
+    trial.logs.push({ type: 'challenge', guess: selectedGuess, mask: feedbackMask, borderReveal, borderUnknown, numberReveal });
     if (!candidateIndices(trial).length) {
       const alert = $('#feedbackConflict');
-      alert.textContent = '这组反馈与当前卡池矛盾：请检查点亮项目，以及游戏揭示的完整边框和等级／阶级／连接值。';
+      alert.textContent = '这组反馈与当前卡池矛盾：请检查点亮项目、等级／阶级／连接值，以及灵摆边框是否真正相符。';
       alert.hidden = false;
       alert.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
       return;
     }
 
     pushUndo();
-    const strictMask = feedbackMask;
+    const strictMask = borderUnknown || (feedbackMask & 1 && CARDS[selectedGuess].b !== borderReveal) ? feedbackMask & ~1 : feedbackMask;
     const newMask = state.matchedMask | strictMask;
     let delta = thresholdGain(state.matchedMask, newMask);
     const solvedNow = strictMask === 63;
@@ -1105,11 +1102,14 @@
     for (const field of FIELDS) {
       if (!(feedbackMask & field.bit)) continue;
       let value = fieldValue(guess, field.key);
-      if (field.key === 'border') value = borderReveal;
+      if (field.key === 'border') {
+        if (borderUnknown) continue;
+        value = borderReveal;
+      }
       if (field.key === 'number') value = numberReveal;
       state.known[field.key] = { value, source: 'challenge' };
     }
-    const log = { type: 'challenge', guess: selectedGuess, mask: feedbackMask, strictMask, borderReveal, numberReveal, delta, time: timeLabel() };
+    const log = { type: 'challenge', guess: selectedGuess, mask: feedbackMask, strictMask, borderReveal, borderUnknown, numberReveal, delta, time: timeLabel() };
     state.logs.push(log);
     appendHistory(log);
     if ($('#feedbackDialog').open) $('#feedbackDialog').close();
@@ -1715,7 +1715,7 @@
     const target = CARDS[testSession.targetIndex];
     feedbackMask = matchMask(target, CARDS[selectedGuess]);
     renderFeedback();
-    if (feedbackMask & 1) $('#borderReveal').value = String(target.b);
+    if (feedbackMask & 1) { $('#pendulumBorderExact').checked = target.b === CARDS[selectedGuess].b; $('#pendulumBorderExact').dataset.autoExact=String(target.b===CARDS[selectedGuess].b); }
     if (feedbackMask & 8) $('#numberReveal').value = String(target.n);
     recordChallenge();
   }
@@ -2137,7 +2137,7 @@
     });
     $('#undoBtn').addEventListener('click', () => {
       if (!undoStack.length) return;
-      state = undoStack.pop(); syncCurrentActivityHistory(); render(); toast('已撤销上一步。');
+      state = undoStack.pop(); render(); toast('已撤销上一步。');
     });
     $('#resetPuzzleBtn').addEventListener('click', () => {
       if (!confirm('重置本题会移除本题线索、挑战记录和本题得分，是否继续？')) return;
@@ -2145,16 +2145,13 @@
       state.totalScore = Math.max(0, state.totalScore - state.puzzleScore);
       if (isPremiumPuzzle()) state.premiumScore = Math.max(0, state.premiumScore - state.puzzleScore);
       else state.progressScore = Math.max(0, state.progressScore - state.puzzleScore);
-      state.activityHistory = (state.activityHistory || []).filter((item) => item.puzzle !== state.puzzle || item.activityId !== state.activityId);
       resetPuzzle(false);
-      syncCurrentActivityHistory();
       if (testSession) seedTestInitialReveal();
       render();
     });
     $('#resetEventBtn').addEventListener('click', () => {
       if (!confirm(`确定清除整个 ${state.config.puzzles} 题活动的本地记录吗？`)) return;
       pushUndo();
-      removeActivityFromSession(state.activityId);
       const presetId = state.presetId;
       state = freshState(state.config);
       state.presetId = presetId;
