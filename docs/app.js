@@ -1351,7 +1351,7 @@
       const signature = candidates.map((targetIndex) => {
         const target = CARDS[targetIndex];
         const mask = matchMask(target, guess);
-        return `${mask}:${strictMatchMask(target, guess)}:${mask & 1 ? target.b : ''}:${mask & 8 ? target.n : ''}`;
+        return `${mask}:${strictMatchMask(target, guess)}:${isExactAnswer(target, guess) ? 1 : 0}:${mask & 1 ? target.b : ''}:${mask & 8 ? target.n : ''}`;
       }).join('|');
       if (!signatures.has(signature)) signatures.set(signature, guessIndex);
     }
@@ -1888,7 +1888,7 @@
       const signatures = new Map();
       for (const action of universe) {
         if (guessed.has(action)) continue;
-        const signature = candidates.map((targetIndex) => { const target=CARDS[targetIndex],guess=CARDS[action],mask=matchMask(target,guess); return `${mask}:${strictMatchMask(target,guess)}:${mask&1?target.b:''}:${mask&8?target.n:''}`; }).join('|');
+        const signature = candidates.map((targetIndex) => { const target=CARDS[targetIndex],guess=CARDS[action],mask=matchMask(target,guess); return `${mask}:${strictMatchMask(target,guess)}:${isExactAnswer(target,guess)?1:0}:${mask&1?target.b:''}:${mask&8?target.n:''}`; }).join('|');
         if (!signatures.has(signature)) signatures.set(signature, action);
       }
       try {
