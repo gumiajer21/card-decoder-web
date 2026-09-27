@@ -67,6 +67,8 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 2px s
 .creator-notice { display: grid; gap: 3px; max-width: 430px; padding: 4px 10px; text-align: center; }
 .creator-notice strong { color: var(--sky); font-size: 1rem; letter-spacing: .04em; }
 .creator-notice span { color: var(--muted); font-size: .76rem; line-height: 1.45; }
+.triple-icons { display:block; width:184px; height:46px; flex:0 0 184px; overflow:hidden; border-radius:5px; background:#fff; }
+.triple-icons img { display:block; width:100%; height:100%; object-fit:contain; }
 .top-controls { display: grid; justify-items: end; gap: 7px; }
 .event-stats, .event-actions { display: flex; align-items: center; justify-content: flex-end; gap: 8px; flex-wrap: wrap; }
 .event-actions .quiet-btn { height: 32px; }
@@ -188,6 +190,11 @@ select:focus, input:focus { border-color: var(--sky); box-shadow: 0 0 0 3px rgba
 .pendulum-check small { margin-top:3px; color:var(--muted); font-size:.66rem; line-height:1.45; }
 .special-reveals { display: grid; grid-template-columns: 1fr 1fr; gap: 9px; margin-top: 10px; }
 .special-reveals label { display: grid; gap: 6px; }
+.border-reveal-wrap { min-width:0; margin:0; padding:9px; border:1px solid rgba(248,212,119,.35); border-radius:9px; }
+.border-reveal-wrap legend { padding:0 5px; color:var(--muted); font-size:.72rem; }
+.border-reveal-choices { display:flex; flex-wrap:wrap; gap:7px; }
+.border-choice { min-height:36px; padding:6px 11px; border:1px solid var(--line); border-radius:8px; color:var(--muted); background:rgba(12,26,43,.54); }
+.border-choice.is-on { border-color:var(--gold); color:var(--text); background:rgba(248,212,119,.14); box-shadow:inset 0 0 0 1px rgba(248,212,119,.16); }
 .form-footer { display: flex; align-items: end; justify-content: space-between; gap: 16px; }
 .form-footer .form-help { max-width: 580px; }
 
@@ -497,6 +504,7 @@ html[data-theme="light"] .search-result:focus { background: rgba(37,99,235,.07);
 @media (max-width: 980px) {
   .topbar { flex-wrap: wrap; }
   .creator-notice { order: 3; width: 100%; max-width: none; }
+  .triple-icons { order:4; margin-left:auto; }
   .side-wallpaper { display: none; }
   .topbar { align-items: flex-start; }
   .top-controls { max-width: 650px; }
