@@ -296,6 +296,8 @@
 
   function toast(message) {
     const element = $('#toast');
+    const openDialogs = [...document.querySelectorAll('dialog[open]')];
+    (openDialogs.at(-1) || document.body).appendChild(element);
     element.textContent = message;
     element.hidden = false;
     clearTimeout(toastTimer);
