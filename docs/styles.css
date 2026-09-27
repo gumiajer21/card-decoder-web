@@ -315,10 +315,12 @@ html[data-theme="light"] .pool-caveat { color: #76570c; background: rgba(245,188
 .history-timeline .history-item { align-self: start; }
 .group-card-list { display:grid; grid-template-columns:repeat(auto-fill,minmax(210px,1fr)); gap:7px; max-height:58vh; overflow:auto; }
 .group-list-heading { grid-column:1 / -1; margin:10px 0 0; color:var(--muted); font-size:.76rem; letter-spacing:.06em; }
-.group-card-entry { display:grid; grid-template-columns:minmax(0,1fr) auto; gap:8px; align-items:center; padding:9px 10px; border:1px solid var(--line); border-radius:8px; background:rgba(12,26,43,.45); }
+.group-card-entry { display:grid; grid-template-columns:58px minmax(0,1fr); gap:9px; align-items:center; padding:9px; border:1px solid var(--line); border-radius:8px; background:rgba(12,26,43,.45); }
+.group-card-entry img { grid-row:1 / span 2; width:58px; aspect-ratio:420/610; object-fit:cover; border:1px solid var(--line); border-radius:5px; cursor:zoom-in; }
+.group-card-entry div { min-width:0; }
 .group-card-entry button { border:1px solid var(--line); border-radius:6px; padding:4px 7px; color:var(--sky); background:transparent; cursor:pointer; }
 .group-card-entry span { overflow-wrap:anywhere; font-size:.76rem; }
-.group-card-entry code { color:var(--muted); font-size:.65rem; }
+.group-card-entry small { display:block; margin-top:4px; color:var(--muted); font-size:.61rem; line-height:1.4; }
 .group-open-btn { height:28px; padding:0 7px; border:1px solid var(--line); border-radius:6px; color:var(--sky); background:transparent; font-size:.64rem; }
 .empty-inline { display: grid; place-items: center; min-height: 130px; color: var(--muted); font-size: .76rem; text-align: center; }
 .data-note { display: flex; justify-content: space-between; gap: 14px; margin-top: 12px; color: var(--muted); font-size: .67rem; }

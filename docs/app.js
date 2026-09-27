@@ -666,15 +666,30 @@
     $$('.filter-picker').forEach((picker)=>{const count=picker.querySelectorAll('input[type="checkbox"]:checked').length;picker.querySelector('[data-filter-count]').textContent=count?`已选 ${count}`:'全部';});
   }
 
+  function groupRepresentativeNames(card) {
+    const groups = [];
+    let aliases = [];
+    for (const name of card.names || [card.name]) {
+      aliases.push(name);
+      if (/[\u3040-\u30ff]/.test(name)) {
+        groups.push(aliases);
+        aliases = [];
+      }
+    }
+    if (aliases.length) groups.push(aliases);
+    return groups.map((group) => group[0]);
+  }
+
   function openGroupDialog(index) {
     const card = CARDS[Number(index)];
     if (!card) return;
     $('#groupDialogTitle').textContent = card.name;
-    $('#groupDialogSummary').textContent = `该判定组在当前卡池包含 ${weightOf(card).toLocaleString('zh-CN')} 张记录；以下列出数据库保存的全部卡名／别名和卡片密码。它们的六项判定完全相同，猜中其中任意一张均算正确。`;
-    const names = [...new Set(card.names || [card.name])];
-    const ids = [...new Set(card.ids || [])];
-    $('#groupDialogList').innerHTML = `<h3 class="group-list-heading">卡名／别名</h3>${names.map((name) => `<div class="group-card-entry"><span>${escapeHtml(name)}</span><button type="button" data-copy-name="${escapeAttr(name)}">复制</button></div>`).join('')}`
-      + (ids.length ? `<h3 class="group-list-heading">卡片密码</h3>${ids.map((id) => `<div class="group-card-entry"><span>卡片密码</span><code>${id}</code></div>`).join('')}` : '');
+    $('#groupDialogSummary').textContent = `该判定组在当前卡池包含 ${weightOf(card).toLocaleString('zh-CN')} 张记录；以下按多语言别名组归并为代表卡。它们的六项判定完全相同，猜中其中任意一张均算正确。`;
+    const names = groupRepresentativeNames(card);
+    $('#groupDialogList').innerHTML = names.map((name) => {
+      const previewCard = { ...card, name };
+      return `<article class="group-card-entry"><img src="${cardImageUrl(previewCard)}" data-zoomable="true" alt="${escapeAttr(name)} 信息卡"><div><span>${escapeHtml(name)}</span><small>${escapeHtml(cardStats(card))}</small></div><button type="button" data-copy-name="${escapeAttr(name)}">复制卡名</button></article>`;
+    }).join('');
     if (!$('#groupDialog').open) $('#groupDialog').showModal();
   }
 
@@ -688,8 +703,9 @@
     const strictMask = log.strictMask == null ? log.mask : log.strictMask;
     const matchedFields = FIELDS.filter((field) => strictMask & field.bit);
     const partialBorder = Boolean((log.mask & 1) && !(strictMask & 1));
+    const borderStatus = log.borderUnknown ? ' · 边框严格状态未知' : partialBorder ? ' · 边框仅部分点亮' : '';
     const matched = matchedFields.map((field) => field.label).join('、') || '无相符项';
-    return `<article class="history-item history-challenge">${guess ? `<img data-card-index="${log.guess}" alt="${escapeAttr(guess.name)}卡图">` : '<div class="history-symbol">?</div>'}<div><header><strong>第${puzzle}题 · ${escapeHtml(guess?.name || '未知卡')}</strong><time>${log.time || ''}</time></header><p>${matched}${partialBorder ? ' · 边框仅部分点亮' : ''}${log.delta ? ` · <b>+${log.delta}</b>` : ''}</p><div class="history-match-chips">${matchedFields.map((field) => `<span>${field.icon} ${escapeHtml(field.label)}</span>`).join('') || '<span>0项严格相符</span>'}</div>${expanded && log.candidates != null ? `<small>操作前约 ${Number(log.candidates).toLocaleString('zh-CN')} 张候选</small>` : ''}</div></article>`;
+    return `<article class="history-item history-challenge">${guess ? `<img data-card-index="${log.guess}" alt="${escapeAttr(guess.name)}卡图">` : '<div class="history-symbol">?</div>'}<div><header><strong>第${puzzle}题 · ${escapeHtml(guess?.name || '未知卡')}</strong><time>${log.time || ''}</time></header><p>${matched}${borderStatus}${log.delta ? ` · <b>+${log.delta}</b>` : ''}</p><div class="history-match-chips">${matchedFields.map((field) => `<span>${field.icon} ${escapeHtml(field.label)}</span>`).join('') || '<span>0项严格相符</span>'}</div>${expanded && log.candidates != null ? `<small>操作前约 ${Number(log.candidates).toLocaleString('zh-CN')} 张候选</small>` : ''}</div></article>`;
   }
 
   function hydrateCardImages(root) {
@@ -980,7 +996,7 @@
   function selectGuess(index) {
     selectedGuess = Number(index);
     feedbackMask = 0;
-    $('#pendulumBorderExact').checked = true;
+    $('#pendulumBorderExact').checked = false;
     delete $('#pendulumBorderExact').dataset.autoExact;
     const card = CARDS[selectedGuess];
     $('#cardSearch').value = card.name;
@@ -1012,9 +1028,11 @@
     const numberOn = Boolean(feedbackMask & 8);
     $('#feedbackConflict').hidden = true;
     $('#specialReveals').hidden = !(borderOn || numberOn);
-    $('#pendulumExactWrap').hidden = !borderOn || !canTogglePendulumBorder(guess.b);
+    const exactCanBeObserved = borderOn && canTogglePendulumBorder(guess.b) && feedbackMask === 63;
+    $('#pendulumExactWrap').hidden = !exactCanBeObserved;
     $('#numberRevealWrap').hidden = !numberOn;
-    if (borderOn && canTogglePendulumBorder(guess.b)) $('#feedbackNote').textContent = '边框点亮只代表基础边框重叠。无论挑战卡是否含灵摆，都请根据游戏最终判定确认完整边框是否真正相符。';
+    if (borderOn && canTogglePendulumBorder(guess.b) && feedbackMask !== 63) $('#feedbackNote').textContent = '边框虽然点亮，但其他项并未全部相符，因此无法判断灵摆部分是否一致。求解器会同时保留灵摆与非灵摆两种可能。';
+    else if (exactCanBeObserved) $('#feedbackNote').textContent = '六项均已点亮。请只根据游戏是否判定完全猜中，确认灵摆部分是否也严格相符。';
     else $('#feedbackNote').textContent = '勾选游戏中亮起的项目；测试和小游戏模式会自动生成判定。';
     if (numberOn) populateSpecialReveal('number');
   }
@@ -1052,13 +1070,14 @@
     if (state.logs.some((log) => log.type === 'challenge' && log.guess === selectedGuess)) { toast('同题重复挑战这张卡不会扣次数，也不会留下记录。'); return; }
     const guess = CARDS[selectedGuess];
     const automaticExact=$('#pendulumBorderExact').dataset.autoExact;
-    const borderExact = automaticExact !== undefined ? automaticExact === 'true' : (!(feedbackMask & 1) || !canTogglePendulumBorder(guess.b) || $('#pendulumBorderExact').checked);
+    const borderUnknown = automaticExact === undefined && Boolean(feedbackMask & 1) && canTogglePendulumBorder(guess.b) && feedbackMask !== 63;
+    const borderExact = automaticExact !== undefined ? automaticExact === 'true' : (borderUnknown ? null : (!(feedbackMask & 1) || !canTogglePendulumBorder(guess.b) || $('#pendulumBorderExact').checked));
     delete $('#pendulumBorderExact').dataset.autoExact;
-    const borderReveal = feedbackMask & 1 ? (borderExact ? guess.b : (guess.b ^ 128)) : null;
+    const borderReveal = feedbackMask & 1 && !borderUnknown ? (borderExact ? guess.b : (guess.b ^ 128)) : null;
     const numberReveal = feedbackMask & 8 ? Number($('#numberReveal').value) : null;
     if ((feedbackMask & 8) && Number.isNaN(numberReveal)) { toast('请录入目标显示的等级／阶级／连接值。'); return; }
     const trial = clone(state);
-    trial.logs.push({ type: 'challenge', guess: selectedGuess, mask: feedbackMask, borderReveal, numberReveal });
+    trial.logs.push({ type: 'challenge', guess: selectedGuess, mask: feedbackMask, borderReveal, borderUnknown, numberReveal });
     if (!candidateIndices(trial).length) {
       const alert = $('#feedbackConflict');
       alert.textContent = '这组反馈与当前卡池矛盾：请检查点亮项目、等级／阶级／连接值，以及灵摆边框是否真正相符。';
@@ -1068,7 +1087,7 @@
     }
 
     pushUndo();
-    const strictMask = feedbackMask & 1 && CARDS[selectedGuess].b !== borderReveal ? feedbackMask & ~1 : feedbackMask;
+    const strictMask = borderUnknown || (feedbackMask & 1 && CARDS[selectedGuess].b !== borderReveal) ? feedbackMask & ~1 : feedbackMask;
     const newMask = state.matchedMask | strictMask;
     let delta = thresholdGain(state.matchedMask, newMask);
     const solvedNow = strictMask === 63;
@@ -1083,11 +1102,14 @@
     for (const field of FIELDS) {
       if (!(feedbackMask & field.bit)) continue;
       let value = fieldValue(guess, field.key);
-      if (field.key === 'border') value = borderReveal;
+      if (field.key === 'border') {
+        if (borderUnknown) continue;
+        value = borderReveal;
+      }
       if (field.key === 'number') value = numberReveal;
       state.known[field.key] = { value, source: 'challenge' };
     }
-    const log = { type: 'challenge', guess: selectedGuess, mask: feedbackMask, strictMask, borderReveal, numberReveal, delta, time: timeLabel() };
+    const log = { type: 'challenge', guess: selectedGuess, mask: feedbackMask, strictMask, borderReveal, borderUnknown, numberReveal, delta, time: timeLabel() };
     state.logs.push(log);
     appendHistory(log);
     if ($('#feedbackDialog').open) $('#feedbackDialog').close();
