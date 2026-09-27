@@ -357,6 +357,10 @@
     return matchMask(target, guess);
   }
 
+  function isExactAnswer(target, guess) {
+    return matchMask(target, guess) === 63 && target.b === guess.b;
+  }
+
   async function copyCardName(card) {
     if (!card) return;
     try {
@@ -391,7 +395,8 @@
       if (log.type !== 'challenge') continue;
       const before = matchedMask;
       matchedMask |= log.strictMask;
-      solved = log.strictMask === 63;
+      const guess = CARDS[log.guess];
+      solved = log.strictMask === 63 && (!guess || log.borderReveal == null || Number(log.borderReveal) === guess.b);
       log.delta = thresholdGain(before, matchedMask, state.config, state.puzzle) + (solved ? solveReward(state.config, state.puzzle) : 0);
       migratedPuzzleScore += log.delta;
     }
@@ -794,7 +799,7 @@
         if(guess<0)throw new Error(`第 ${lineNumber+1} 行找不到挑战卡“${parts[2]}”。`);
         let mask=0;for(const token of (parts[3]||'').split(/[,，/／]+/).map((item)=>item.trim()).filter(Boolean)){const field=fieldAliases.get(token);if(!field)throw new Error(`第 ${lineNumber+1} 行无法识别点亮字段“${token}”。`);mask|=field.bit;}
         const borderReveal=mask&1?parseImportedValue('border',parts[4]):null,numberReveal=mask&8?parseImportedValue('number',parts[5]):null;
-        const strictMask=mask,before=next.matchedMask,after=before|strictMask,solved=strictMask===63;
+        const strictMask=mask,before=next.matchedMask,after=before|strictMask,solved=strictMask===63&&borderReveal===CARDS[guess].b;
         let delta=thresholdGain(before,after,next.config,puzzle);if(solved)delta+=solveReward(next.config,puzzle);
         next.matchedMask=after;next.challenges-=1;next.puzzleScore+=delta;next.totalScore+=delta;if(isPremiumPuzzle(puzzle,next.config))next.premiumScore+=delta;else next.progressScore+=delta;next.solved=solved;
         for(const field of FIELDS)if(mask&field.bit)next.known[field.key]={value:field.key==='border'?borderReveal:field.key==='number'?numberReveal:fieldValue(CARDS[guess],field.key),source:'challenge'};
@@ -1102,7 +1107,7 @@
     const strictMask = feedbackMask;
     const newMask = state.matchedMask | strictMask;
     let delta = thresholdGain(state.matchedMask, newMask);
-    const solvedNow = strictMask === 63;
+    const solvedNow = strictMask === 63 && borderReveal === guess.b;
     if (solvedNow) delta += solveReward();
     state.matchedMask = newMask;
     state.challenges -= 1;
@@ -1124,7 +1129,8 @@
     if ($('#feedbackDialog').open) $('#feedbackDialog').close();
     clearGuess();
     render();
-    toast(solvedNow ? `本题完成，获得 ${delta} 分。` : delta ? `记录成功，本次获得 ${delta} 分。` : '记录成功，候选集已更新。');
+    const partialSix = strictMask === 63 && !solvedNow;
+    toast(solvedNow ? `本题完成，获得 ${delta} 分。` : partialSix ? '六项均点亮，但完整边框不同，因此本题尚未通过。' : delta ? `记录成功，本次获得 ${delta} 分。` : '记录成功，候选集已更新。');
   }
 
   async function calculateRecommendations() {
@@ -1160,7 +1166,7 @@
         const strictMask = strictMatchMask(target, guess);
         const newMask = oldMask | strictMask;
         let gain = thresholdGain(oldMask, newMask);
-        if (strictMask === 63) { gain += solveReward(); solveMass += weight; }
+        if (isExactAnswer(target, guess)) { gain += solveReward(); solveMass += weight; }
         immediateSum += gain * weight;
         newMatchesSum += (popcount(newMask) - oldCount) * weight;
         if (mask & 1) bitMass[0] += weight;
@@ -1831,7 +1837,7 @@
         const weight = observation.weight;
         const mask = matchMask(target, guess);
         let gain = thresholdGain(matchedMask, matchedMask | mask, config, puzzle);
-        if (mask === 63) { gain += solveReward(config, puzzle); solve += weight; }
+        if (isExactAnswer(target, guess)) { gain += solveReward(config, puzzle); solve += weight; }
         const key = mask | ((mask & 1 ? target.b : 0) << 6) | ((mask & 8 ? target.n + 1 : 0) << 14);
         outcomes.set(key, (outcomes.get(key) || 0) + weight);
         points += gain * weight;
@@ -1866,7 +1872,7 @@
       const bitMass = [0,0,0,0,0,0];
       for (const targetIndex of candidates) {
         const target = CARDS[targetIndex], weight = simulationWeight(target, pool), mask = matchMask(target, guess), strictMask = strictMatchMask(target, guess);
-        if (strictMask === 63) solveMass += weight;
+        if (isExactAnswer(target, guess)) solveMass += weight;
         newMatches += (popcount(matchedMask | strictMask) - oldCount) * weight;
         for (let bit = 0; bit < 6; bit += 1) if (mask & (1 << bit)) bitMass[bit] += weight;
       }
@@ -1962,7 +1968,7 @@
         for (const field of FIELDS) if (mask & field.bit) known.add(field.key);
         challenges -= 1;
         challengesUsed += 1;
-        if (strictMask === 63) {
+        if (isExactAnswer(target, guess)) {
           const bonus = solveReward(config, puzzle);
           if (isPremiumPuzzle(puzzle, config)) premiumScore += bonus; else progressScore += bonus;
           solved += 1; puzzleSolved = true; break;
