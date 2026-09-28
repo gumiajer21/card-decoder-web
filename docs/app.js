@@ -234,7 +234,10 @@
     return `data:image/svg+xml;charset=utf-8,${encodeURIComponent(svg)}`;
   }
 
-  const CARD_IMAGE_RELEASE_BASE = 'https://github.com/gumiajer21/card-decoder-web/releases/download/card-image-zh-v1/';
+  // GitHub Release 下载地址会 302 到对象存储，浏览器 fetch 会触发 CORS。
+  // 这里使用可被浏览器跨域读取的静态 CDN；图片包需放在
+  // gumiajer21/card-decoder-images 仓库的 v1 标签下。
+  const CARD_IMAGE_RELEASE_BASE = 'https://cdn.jsdelivr.net/gh/gumiajer21/card-decoder-images@v1/';
   const CARD_IMAGE_CACHE_VERSION = '1';
   const imagePackRequests = new Map();
   let imageDbPromise = null;

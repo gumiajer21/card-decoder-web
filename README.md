@@ -24,7 +24,7 @@
 - 测试模式、小游戏模式和 1／2／4／8 路并行规模测试
 - 测试模式可指定目标卡，并可指定或随机生成初始揭示字段
 - 可计算任意挑战卡的单步收益，并将自选卡与推荐卡放入“强制第一步”的策略价值对比
-- 默认使用无外部依赖的仿卡面信息卡；也可启用从 GitHub Release 按需下载并缓存的中文高清卡图
+- 默认使用无外部依赖的仿卡面信息卡；也可启用从 jsDelivr 按需下载并缓存的中文高清卡图
 - 接近游戏内样式的目标卡／六项横条／挑战卡三栏展示，使用边框、属性、种族、等级、阶级、连接及攻守素材
 - 独立的常见问题、原始版本与更新记录公示区，以及 B站介绍视频入口
 
@@ -36,7 +36,7 @@
 
 - 六项信息区改为目标卡、纵向判定条和猜测卡三栏布局，素材与游戏内显示方式更接近
 - 增加滚动告示，并完善窄窗口下的顶部布局
-- 中文高清卡图采用可选的 Release 分包：首次查看时按需下载约 10–15 MB，并缓存在浏览器 IndexedDB 中
+- 中文高清卡图采用可选的 CDN 分包：首次查看时按需下载约 10–15 MB，并缓存在浏览器 IndexedDB 中
 - 增加卡图缓存管理，可关闭自动下载、查看已缓存分包并一键清理；下载失败自动回退到仿卡
 
 - 测试模式新增指定目标卡和指定初始揭示，方便复现实例与验证求解路线
@@ -80,12 +80,12 @@
 .\tools\build-card-image-packs.ps1
 ```
 
-脚本会在未纳入 Git 的 `release-assets/card-images-zh-v1` 中生成100个 ZIP 和 `manifest.json`。在本仓库创建标签严格为 `card-image-zh-v1` 的 GitHub Release，并上传：
+脚本会在未纳入 Git 的 `release-assets/card-images-zh-v1` 中生成100个 ZIP 和 `manifest.json`。由于 GitHub Release 不适合被网页 fetch，需将这些 ZIP 和 `manifest.json` 上传到公开仓库 `gumiajer21/card-decoder-images`，并创建标签 `v1`。网页会从 `https://cdn.jsdelivr.net/gh/gumiajer21/card-decoder-images@v1/` 读取：
 
 - `card-images-zh-00.zip` 至 `card-images-zh-99.zip`
 - `manifest.json`
 
-网页固定从 `https://github.com/gumiajer21/card-decoder-web/releases/download/card-image-zh-v1/` 按需读取这些附件。图片更新时应使用新版本标签并同步修改 `docs/app.js` 中的版本与地址，避免旧缓存和新资源混用。
+图片更新时应使用新的版本标签，并同步修改 `docs/app.js` 中的 CDN 地址，避免旧缓存和新资源混用。GitHub Release 上传脚本仍可作为本地备份发布工具，但不再作为网页运行时资源源。
 
 如果电脑已安装并登录 GitHub CLI，也可以在确认仓库和标签无误后运行 `.\tools\publish-card-image-release.ps1`，脚本会创建对应 Release 并依次上传全部101个附件；中断后可再次运行，已存在的同名附件会被覆盖。
 
