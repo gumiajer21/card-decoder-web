@@ -6,6 +6,7 @@
   const STORAGE_KEY = 'card-decoder-state-v4';
   const PRESET_KEY = 'card-decoder-custom-presets-v1';
   const SESSION_HISTORY_KEY = 'card-decoder-session-history-v1';
+  const MODE_SESSION_HISTORY_KEY = 'card-decoder-mode-history-v1';
   const BUILTIN_PRESETS = Array.isArray(window.ACTIVITY_PRESETS) ? window.ACTIVITY_PRESETS : [];
   const WALLPAPERS = Array.isArray(window.CARD_DECODER_WALLPAPERS) ? window.CARD_DECODER_WALLPAPERS.filter(Boolean) : [];
   const FALLBACK_CONFIG = {
@@ -127,14 +128,19 @@
     localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
   }
 
-  function readSessionHistory() {
+  function historyStorageKey(mode = 'activity') {
+    return mode === 'activity' ? SESSION_HISTORY_KEY : MODE_SESSION_HISTORY_KEY;
+  }
+
+  function readSessionHistory(mode = 'activity') {
     try {
-      const history = JSON.parse(sessionStorage.getItem(SESSION_HISTORY_KEY));
-      return Array.isArray(history) ? history : [];
+      const history = JSON.parse(sessionStorage.getItem(historyStorageKey(mode)));
+      return Array.isArray(history) ? history.filter((item) => item && typeof item === 'object' && (mode !== 'activity' ? item.mode === mode : item.mode !== 'test' && item.mode !== 'game')) : [];
     } catch { return []; }
   }
 
   function appendHistory(entry) {
+    const mode = testSession?.mode || 'activity';
     const record = {
       ...clone(entry),
       id: `${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
@@ -146,18 +152,18 @@
     };
     state.activityHistory.push(record);
     if (state.activityHistory.length > 240) state.activityHistory.shift();
-    const session = readSessionHistory();
+    const session = readSessionHistory(mode);
     session.push(record);
-    sessionStorage.setItem(SESSION_HISTORY_KEY, JSON.stringify(session.slice(-500)));
+    sessionStorage.setItem(historyStorageKey(mode), JSON.stringify(session.slice(-500)));
   }
 
   function syncCurrentActivityHistory() {
-    const unrelated = readSessionHistory().filter((item) => item.activityId !== state.activityId);
+    const unrelated = readSessionHistory('activity').filter((item) => item.activityId !== state.activityId);
     sessionStorage.setItem(SESSION_HISTORY_KEY, JSON.stringify([...unrelated, ...(state.activityHistory || [])].slice(-500)));
   }
 
   function removeActivityFromSession(activityId) {
-    sessionStorage.setItem(SESSION_HISTORY_KEY, JSON.stringify(readSessionHistory().filter((item) => item.activityId !== activityId)));
+    sessionStorage.setItem(SESSION_HISTORY_KEY, JSON.stringify(readSessionHistory('activity').filter((item) => item.activityId !== activityId)));
   }
 
   function clampInt(value, min, max, fallback) {
@@ -944,7 +950,9 @@
   }
 
   function openHistoryArchive() {
-    const history = readSessionHistory();
+    const mode = testSession?.mode || 'activity';
+    if (mode === 'activity') syncCurrentActivityHistory();
+    const history = readSessionHistory(mode);
     const challenges = history.filter((item) => item.type === 'challenge').length;
     const activities = new Set(history.map((item) => item.activityId)).size;
     $('#historySummary').innerHTML = `<div><span>本窗口活动</span><strong>${activities}</strong></div><div><span>挑战记录</span><strong>${challenges}</strong></div><div><span>全部操作</span><strong>${history.length}</strong></div>`;
@@ -1044,6 +1052,7 @@
       challengeSemanticsMigrated = false;
       testSession = null;
       clearGuess();
+      syncCurrentActivityHistory();
       $('#importDialog').close();
       $('#historyDialog').close();
       render();
@@ -2009,6 +2018,7 @@
 
   function startSession(mode, options = {}) {
     if (testSession) return;
+    sessionStorage.removeItem(MODE_SESSION_HISTORY_KEY);
     const requestedTarget = Number(options.targetIndex);
     const targetIndex = Number.isInteger(requestedTarget) && requestedTarget >= 0 && requestedTarget < CARDS.length && weightOf(CARDS[requestedTarget]) > 0 ? requestedTarget : randomWeightedIndex(state.pool);
     testSession = { realState:clone(state), targetIndex, mode, revealed:false, initialField:options.initialField || 'random' };
@@ -2086,6 +2096,7 @@
     state = testSession.realState;
     state.theme = theme;
     state.imageQuality = imageQuality;
+    sessionStorage.removeItem(MODE_SESSION_HISTORY_KEY);
     testSession = null;
     undoStack = [];
     clearGuess();
@@ -2549,7 +2560,9 @@
     $('#importForm').addEventListener('submit',(event)=>{event.preventDefault();importActivity();});
     $('#clearArchiveBtn').addEventListener('click', () => {
       if (!confirm('清除当前窗口中保存的旧活动档案？当前活动记录仍会保留。')) return;
-      sessionStorage.setItem(SESSION_HISTORY_KEY, JSON.stringify(state.activityHistory || []));
+      const mode = testSession?.mode || 'activity';
+      if (mode === 'activity') sessionStorage.setItem(SESSION_HISTORY_KEY, JSON.stringify(state.activityHistory || []));
+      else sessionStorage.removeItem(MODE_SESSION_HISTORY_KEY);
       openHistoryArchive();
     });
     $('#themeSelect').addEventListener('change', (event) => {
