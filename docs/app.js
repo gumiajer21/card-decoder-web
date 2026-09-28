@@ -880,18 +880,34 @@
     if (!$('#groupDialog').open) $('#groupDialog').showModal();
   }
 
+  function historyFeedbackBars(log, guess) {
+    const historyFields = [FIELDS[0], FIELDS[1], FIELDS[3], FIELDS[2], FIELDS[4], FIELDS[5]];
+    return historyFields.map((field) => {
+      const on = Boolean((log.strictMask == null ? log.mask : log.strictMask) & field.bit);
+      const value = field.key === 'border' && log.borderReveal != null ? log.borderReveal : (guess ? fieldValue(guess, field.key) : '');
+      const text = field.key === 'attribute' || field.key === 'race' ? `<span class="history-field-text">${field.key === 'attribute' ? '属性' : '种族'}</span>` : '';
+      return `<span class="history-feedback-bar${on ? ' is-on' : ''}">${fieldLeadHtml(field)}${text}<b>${escapeHtml(formatValue(field.key, value))}</b></span>`;
+    }).join('');
+  }
+
+  function historyRevealBars(field, value) {
+    const historyFields = [FIELDS[0], FIELDS[1], FIELDS[3], FIELDS[2], FIELDS[4], FIELDS[5]];
+    return historyFields.map((item) => item.key === field.key
+      ? `<span class="history-feedback-bar is-on">${fieldLeadHtml(item)}${item.key === 'attribute' || item.key === 'race' ? `<span class="history-field-text">${item.key === 'attribute' ? '属性' : '种族'}</span>` : ''}<b>${escapeHtml(formatValue(item.key, value))}</b></span>`
+      : '<span class="history-feedback-bar is-empty"></span>').join('');
+  }
+
   function historyItemHtml(log, expanded = false) {
     const puzzle = log.puzzle || state.puzzle;
     if (log.type === 'reveal') {
       const field = FIELDS.find((item) => item.key === log.field) || FIELDS[0];
-      return `<article class="history-item history-reveal"><div class="history-symbol" data-field="${field.key}">${field.icon}</div><div><header><strong>第${puzzle}题 · ${sourceLabel(log.source)}</strong><time>${log.time || ''}</time></header><p>${field.label}：<b>${escapeHtml(formatValue(log.field, log.value))}</b></p>${expanded ? `<small>揭示用于筛选候选，不累计挑战奖励${log.candidates != null ? ` · 当时约 ${Number(log.candidates).toLocaleString('zh-CN')} 张候选` : ''}</small>` : ''}</div></article>`;
+      return `<article class="history-item history-reveal"><div class="history-challenge-card"><div class="history-lightbulb">💡</div><strong>${sourceLabel(log.source)}</strong></div><div class="history-challenge-body"><div class="history-feedback-bars history-reveal-bars">${historyRevealBars(field, log.value)}</div>${expanded && log.candidates != null ? `<small>操作时约 ${Number(log.candidates).toLocaleString('zh-CN')} 张候选</small>` : ''}</div></article>`;
     }
     const guess = CARDS[log.guess];
     const strictMask = log.strictMask == null ? log.mask : log.strictMask;
     const matchedFields = FIELDS.filter((field) => strictMask & field.bit);
     const borderStatus = (log.mask & 1) && log.borderReveal != null ? ` · 揭示${formatBorder(Number(log.borderReveal))}` : '';
-    const matched = matchedFields.map((field) => field.label).join('、') || '无相符项';
-    return `<article class="history-item history-challenge">${guess ? `<img data-card-index="${log.guess}" alt="${escapeAttr(guess.name)}卡图">` : '<div class="history-symbol">?</div>'}<div><header><strong>第${puzzle}题 · ${escapeHtml(guess?.name || '未知卡')}</strong><time>${log.time || ''}</time></header><p>${matched}${borderStatus}${log.delta ? ` · <b>+${log.delta}</b>` : ''}</p><div class="history-match-chips">${matchedFields.map((field) => `<span>${field.icon} ${escapeHtml(field.label)}</span>`).join('') || '<span>0项严格相符</span>'}</div>${expanded && log.candidates != null ? `<small>操作前约 ${Number(log.candidates).toLocaleString('zh-CN')} 张候选</small>` : ''}</div></article>`;
+    return `<article class="history-item history-challenge"><div class="history-challenge-card">${guess ? `<img data-card-index="${log.guess}" alt="${escapeAttr(guess.name)}卡图">` : '<div class="history-symbol">?</div>'}<strong>${escapeHtml(guess?.name || '未知卡')}</strong></div><div class="history-challenge-body"><div class="history-feedback-bars">${guess ? historyFeedbackBars(log, guess) : ''}</div>${log.delta ? `<p><b>+${log.delta}</b></p>` : ''}${expanded && log.candidates != null ? `<small>操作前约 ${Number(log.candidates).toLocaleString('zh-CN')} 张候选</small>` : ''}</div></article>`;
   }
 
   function hydrateCardImages(root) {
@@ -900,15 +916,30 @@
     });
   }
 
+  function historyGroups(history, expanded = false) {
+    const activities = new Map();
+    const activityOrder = new Map();
+    for (const log of history) {
+      const activityId = log.activityId ?? 'unknown';
+      if (!activityOrder.has(activityId)) activityOrder.set(activityId, activityOrder.size + 1);
+      if (!activities.has(activityId)) activities.set(activityId, { activity: activityOrder.get(activityId), puzzles: new Map() });
+      const activity = activities.get(activityId), puzzle = log.puzzle ?? 1;
+      if (!activity.puzzles.has(puzzle)) activity.puzzles.set(puzzle, []);
+      activity.puzzles.get(puzzle).push(log);
+    }
+    return [...activities.values()].reverse().map((activity) => `<details class="history-group"><summary><span>第${activity.activity}次活动</span><small>${[...activity.puzzles.values()].reduce((sum, logs) => sum + logs.length, 0)} 条行动</small></summary><div class="history-puzzles">${[...activity.puzzles.entries()].map(([puzzle, logs]) => `<details class="history-puzzle"><summary><span>第${puzzle}题</span><small>${logs.length} 条行动</small></summary><div class="history-group-body">${logs.map((log) => historyItemHtml(log, expanded)).join('')}</div></details>`).join('')}</div></details>`).join('');
+  }
+
   function renderHistory() {
     const container = $('#historyList');
     const history = Array.isArray(state.activityHistory) ? state.activityHistory : [];
     $('#historyCount').textContent = `${history.length} 条`;
+    if (!container) return;
     if (!history.length) {
       container.innerHTML = `<div class="empty-inline">当前活动还没有记录。</div>`;
       return;
     }
-    container.innerHTML = [...history].reverse().map((log) => historyItemHtml(log)).join('');
+    container.innerHTML = historyGroups(history);
     hydrateCardImages(container);
   }
 
@@ -917,7 +948,7 @@
     const challenges = history.filter((item) => item.type === 'challenge').length;
     const activities = new Set(history.map((item) => item.activityId)).size;
     $('#historySummary').innerHTML = `<div><span>本窗口活动</span><strong>${activities}</strong></div><div><span>挑战记录</span><strong>${challenges}</strong></div><div><span>全部操作</span><strong>${history.length}</strong></div>`;
-    $('#historyTimeline').innerHTML = history.length ? [...history].reverse().map((log) => historyItemHtml(log, true)).join('') : '<div class="empty-inline">当前窗口还没有历史记录。</div>';
+    $('#historyTimeline').innerHTML = history.length ? historyGroups(history, true) : '<div class="empty-inline">当前窗口还没有历史记录。</div>';
     hydrateCardImages($('#historyTimeline'));
     if (!$('#historyDialog').open) $('#historyDialog').showModal();
   }
@@ -1003,12 +1034,16 @@
       next.hints = clampInt(next.hints, 0, 999, 0);
       next.challenges = clampInt(next.challenges, 0, 999, 0);
       next.matchedMask = clampInt(next.matchedMask, 0, 63, 0);
+      if ((!Array.isArray(next.activityHistory) || !next.activityHistory.length) && Array.isArray(next.logs) && next.logs.length) {
+        next.activityHistory = next.logs.map((log, index) => ({ ...log, id: log.id || `imported-${index}`, activityId: log.activityId || next.activityId, puzzle: log.puzzle || next.puzzle, mode: 'activity', timestamp: log.timestamp || Date.now() + index }));
+      }
       for (const log of next.logs) if (log.type === 'challenge' && (!Number.isInteger(log.guess) || !CARDS[log.guess])) throw new Error('记录引用了当前数据库中不存在的卡片。');
       if (!candidateIndices(next).length && !next.solved) throw new Error('记录与当前卡库冲突，导入后候选会归零。');
       pushUndo();
       state = next;
       challengeSemanticsMigrated = false;
       testSession = null;
+      clearGuess();
       $('#importDialog').close();
       $('#historyDialog').close();
       render();

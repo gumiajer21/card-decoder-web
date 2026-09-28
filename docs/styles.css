@@ -271,14 +271,14 @@ select:focus, input:focus { border-color: var(--sky); box-shadow: 0 0 0 3px rgba
 .alternative-metrics small { display: block; margin-bottom: 2px; color: var(--muted); font-size: .62rem; }
 .method-note { margin: 10px 2px 0; color: var(--muted); font-size: .7rem; line-height: 1.5; }
 
-.lower-panel { grid-column: 1 / -1; min-height: 180px; }
+.lower-panel { grid-column: 1 / -1; min-height: 0; }
 .pool-caveat { margin: -6px 0 14px; padding: 9px 11px; border: 1px solid rgba(248,212,119,.2); border-radius: 9px; color: #d8c896; background: rgba(92,67,18,.14); font-size: .73rem; line-height: 1.55; }
 html[data-theme="light"] .pool-caveat { color: #76570c; background: rgba(245,188,55,.12); border-color: rgba(138,98,8,.22); }
 .lower-actions { display: flex; align-items: center; flex-wrap: wrap; gap: 7px; }
 .lower-actions label { display: flex; align-items: center; gap: 7px; color: var(--muted); font-size: .74rem; }
 .lower-actions select { width: auto; height: 36px; font-size: .74rem; }
 .danger-btn { height: 36px; padding: 0 12px; border: 1px solid rgba(251,113,133,.28); border-radius: 9px; color: #fda4af; background: rgba(251,113,133,.07); }
-.analysis-grid { display: grid; grid-template-columns: minmax(0,1.65fr) minmax(300px,.75fr); gap: 14px; }
+.analysis-grid { display: grid; grid-template-columns: minmax(0,1fr); gap: 14px; }
 .candidate-table-wrap, .history-wrap { min-width: 0; padding: 12px; border: 1px solid var(--line); border-radius: 12px; background: rgba(5,13,25,.42); }
 .subheading { display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; }
 .subheading h3 { margin: 0; font-size: .88rem; }
@@ -319,6 +319,35 @@ html[data-theme="light"] .pool-caveat { color: #76570c; background: rgba(245,188
 #activityImportText { width:100%; resize:vertical; padding:12px; border:1px solid var(--line); border-radius:9px; background:#071321; color:var(--text); font:12px/1.5 ui-monospace,Consolas,monospace; }
 .file-import { display:flex; justify-content:space-between; align-items:center; gap:12px; margin-bottom:10px; padding:10px 12px; border:1px solid var(--line); border-radius:9px; color:var(--muted); font-size:.72rem; }
 .history-list { display: grid; gap: 7px; max-height: 430px; overflow: auto; }
+.history-entry { align-self:start; min-height:0; display:flex; align-items:center; }
+.input-deck-footer { display:flex; justify-content:flex-end; align-items:center; gap:8px; margin-top:10px; color:var(--muted); font-size:.68rem; }
+.input-deck-footer .quiet-btn { min-height:30px; padding:0 10px; }
+.history-group { border:1px solid var(--line); border-radius:10px; background:rgba(12,26,43,.42); overflow:hidden; }
+.history-group summary { cursor:pointer; display:flex; justify-content:space-between; align-items:center; gap:12px; padding:11px 13px; color:var(--text); font-weight:700; list-style:none; }
+.history-group summary::-webkit-details-marker { display:none; }
+.history-group summary::before { content:'▸'; color:var(--gold); margin-right:5px; }
+.history-group[open] summary::before { content:'▾'; }
+.history-group summary small { color:var(--muted); font-weight:500; }
+.history-group-body { display:grid; grid-template-columns:repeat(auto-fit,minmax(230px,1fr)); gap:10px; padding:0 10px 10px; }
+.history-puzzles { display:grid; gap:8px; padding:0 8px 8px; }
+.history-puzzle { border:1px solid var(--line); border-radius:8px; background:rgba(7,16,31,.22); overflow:hidden; }
+.history-puzzle > summary { padding:8px 10px; font-size:.76rem; }
+.history-puzzle .history-group-body { display:flex; flex-wrap:nowrap; align-items:stretch; overflow-x:auto; gap:0; padding:8px 10px 12px; }
+.history-puzzle .history-item { position:relative; flex:0 0 154px; display:grid; grid-template-columns:1fr; gap:7px; padding:8px; }
+.history-puzzle .history-item:not(:last-child)::after { content:'➜'; position:absolute; right:-15px; top:50%; z-index:2; color:var(--gold); font-size:1rem; transform:translateY(-50%); }
+.history-puzzle .history-item + .history-item { margin-left:18px; }
+.history-puzzle .history-challenge-card { min-height:82px; }
+.history-puzzle .history-challenge-card img,.history-puzzle .history-challenge-card .history-symbol,.history-lightbulb { width:52px; height:76px; }
+.history-lightbulb { display:grid; place-items:center; border-radius:8px; color:#fff; background:rgba(255,255,255,.12); font-size:2.2rem; }
+.history-puzzle .history-feedback-bar { min-height:22px; font-size:.58rem; }
+.history-puzzle .history-feedback-bar .field-material,.history-puzzle .history-feedback-bar .stat-material { width:17px; height:18px; }
+.history-puzzle .history-feedback-bar .frame-material { width:13px; height:19px; }
+.history-puzzle .history-feedback-bar .number-materials { width:32px; height:19px; }
+.history-puzzle .history-feedback-bar b { font-size:.64rem; }
+.history-puzzle .history-feedback-bar.is-empty { color:transparent; background:rgba(7,16,31,.48); }
+.history-puzzle .history-reveal-bars { min-height:22px; }
+.history-puzzle .history-reveal-bars .history-feedback-bar.is-on { color:#171704; background:linear-gradient(to bottom,rgba(255,248,123,.72) 0,transparent 10px),linear-gradient(to top,rgba(255,248,123,.72) 0,transparent 10px),linear-gradient(to right,rgba(255,248,123,.72) 0,transparent 10px),linear-gradient(to left,rgba(255,248,123,.72) 0,transparent 10px),linear-gradient(#c8bf24,#c8bf24); }
+html[data-theme="light"] .history-group { background:rgba(246,250,252,.94); }
 .history-heading-actions { display: flex; align-items: center; gap: 8px; }
 .history-heading-actions .quiet-btn { height: 30px; padding: 0 9px; font-size: .68rem; }
 .history-item { display: grid; grid-template-columns: 44px minmax(0,1fr); gap: 10px; padding: 10px; border: 1px solid var(--line); border-radius: 9px; background: rgba(12,26,43,.45); }
@@ -653,6 +682,36 @@ html[data-theme="light"] .clue-card-shell { border-color:rgba(71,103,126,.28); b
   .clue-card-slot { width:min(100%,210px); justify-self:center; }
   .field-grid { width:min(100%,270px); justify-self:center; }
 }
+/* 数据库筛选顺序与六项信息保持一致：边框、属性、等级／阶级／连接、种族、攻击、守备。 */
+.database-filters > #dbNumber { order:3; }
+.database-filters > #dbRace { order:4; }
+.database-filters > #clearDbFilters { order:7; grid-column:1 / -1; }
+/* 活动轨迹：卡图在上、六项反馈条在下，模拟游戏内挑战流程。 */
+.history-timeline { grid-template-columns:repeat(auto-fit,minmax(230px,1fr)); align-items:start; gap:12px; }
+.history-timeline .history-item.history-challenge { display:grid; grid-template-columns:1fr; gap:9px; padding:10px; }
+.history-challenge-card { display:grid; justify-items:center; gap:5px; min-width:0; }
+.history-challenge-card img,.history-challenge-card .history-symbol { width:92px; height:134px; aspect-ratio:59/86; object-fit:cover; border:1px solid var(--line); border-radius:6px; background:rgba(7,16,31,.58); }
+.history-challenge-card img[data-zoomable="true"] { cursor:zoom-in; }
+.history-challenge-card strong { max-width:100%; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; font-size:.72rem; }
+.history-challenge-body { min-width:0; }
+.history-challenge-body header { display:flex; justify-content:space-between; gap:8px; margin-bottom:6px; color:var(--muted); font-size:.64rem; }
+.history-feedback-bars { display:grid; gap:4px; }
+.history-feedback-bar { min-height:28px; display:flex; align-items:center; gap:5px; padding:2px 6px; overflow:hidden; border-radius:5px; color:var(--muted); background:rgba(7,16,31,.72); font-size:.68rem; }
+.history-feedback-bar.is-on { color:#1b1900; background:#c2b91f; }
+.history-feedback-bar.is-on { background:linear-gradient(to bottom,rgba(255,248,123,.72) 0,transparent 10px),linear-gradient(to top,rgba(255,248,123,.72) 0,transparent 10px),linear-gradient(to right,rgba(255,248,123,.72) 0,transparent 10px),linear-gradient(to left,rgba(255,248,123,.72) 0,transparent 10px),linear-gradient(#c8bf24,#c8bf24); }
+.history-feedback-bar .field-material { width:22px; height:24px; }
+.history-feedback-bar .frame-material { width:17px; height:25px; }
+.history-feedback-bar .stat-material { width:23px; height:23px; }
+.history-feedback-bar .number-materials { width:44px; height:25px; }
+.history-feedback-bar .number-symbol { width:22px; height:22px; }
+.history-feedback-bar .number-symbol.link-symbol { width:27px; height:25px; margin-left:-5px; }
+.history-feedback-bar b { margin-left:auto; font-size:.78rem; white-space:nowrap; }
+.history-field-text { font-size:.66rem; white-space:nowrap; }
+.history-challenge-body > p { margin:6px 0 0; color:var(--muted); font-size:.64rem; line-height:1.4; }
+html[data-theme="light"] .history-feedback-bar { color:#526a7b; background:#e6eef3; }
+html[data-theme="light"] .history-feedback-bar.is-on { color:#171704; background:#c8bf24; }
+html[data-theme="light"] .history-feedback-bar.is-on { background:linear-gradient(to bottom,rgba(255,248,123,.72) 0,transparent 10px),linear-gradient(to top,rgba(255,248,123,.72) 0,transparent 10px),linear-gradient(to right,rgba(255,248,123,.72) 0,transparent 10px),linear-gradient(to left,rgba(255,248,123,.72) 0,transparent 10px),linear-gradient(#c8bf24,#c8bf24); }
+
 /* 游戏内风格的挑战反馈条：未点亮为深色，点亮后切换为橄榄金。 */
 .feedback-grid { display:grid; grid-template-columns:1fr; gap:8px; width:min(100%,440px); margin:14px auto 0; }
 .feedback-toggle {
