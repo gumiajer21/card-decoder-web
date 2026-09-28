@@ -348,7 +348,17 @@
     } catch (_) {}
   }
 
+  function clearCardImageRequest(element) {
+    if (!element) return;
+    if (element.dataset.objectUrl) URL.revokeObjectURL(element.dataset.objectUrl);
+    delete element.dataset.objectUrl;
+    delete element.dataset.requestedCardId;
+    delete element.dataset.requestedCardName;
+    if (imageLoadObserver) imageLoadObserver.unobserve(element);
+  }
+
   function setCardImage(element, card, visible = true, fallback = '') {
+    clearCardImageRequest(element);
     const url = cardImageUrl(card);
     element.hidden = !visible || (!url && !fallback);
     element.dataset.zoomable = url ? 'true' : 'false';
@@ -414,8 +424,30 @@
   }
 
   function pushUndo() {
-    undoStack.push(clone(state));
+    undoStack.push({
+      state: clone(state),
+      selectedGuess,
+      feedbackMask,
+      borderRevealValue,
+      testSession: testSession ? clone(testSession) : null,
+    });
     if (undoStack.length > 30) undoStack.shift();
+  }
+
+  function restoreUndoSnapshot(snapshot) {
+    // 兼容当前页面内由旧逻辑留下的纯 state 快照。
+    if (!snapshot || !Object.prototype.hasOwnProperty.call(snapshot, 'state')) {
+      state = snapshot;
+      selectedGuess = null;
+      feedbackMask = 0;
+      borderRevealValue = null;
+      return;
+    }
+    state = snapshot.state;
+    selectedGuess = snapshot.selectedGuess ?? null;
+    feedbackMask = Number(snapshot.feedbackMask || 0);
+    borderRevealValue = snapshot.borderRevealValue ?? null;
+    testSession = snapshot.testSession || null;
   }
 
   function toast(message) {
@@ -664,12 +696,12 @@
     const target = testSession ? CARDS[testSession.targetIndex] : null;
     const targetVisible = Boolean(target && (testSession.mode === 'test' || testSession.revealed || state.solved));
     if (targetVisible) { setCardImage(targetImage, target, true, elementAsset('未知.png')); $('#clueTargetName').textContent = target.name; }
-    else { targetImage.hidden = false; targetImage.src = elementAsset('未知.png'); targetImage.alt = '未知目标卡'; targetImage.dataset.zoomable = 'false'; $('#clueTargetName').textContent = '未知'; }
+    else { clearCardImageRequest(targetImage); targetImage.hidden = false; targetImage.src = elementAsset('未知.png'); targetImage.alt = '未知目标卡'; targetImage.dataset.zoomable = 'false'; $('#clueTargetName').textContent = '未知'; }
     const guessSlot = $('#clueGuessSlot'), guessImage = $('#clueGuessImage');
     const hasGuess = selectedGuess != null && CARDS[selectedGuess];
     guessSlot.classList.toggle('is-empty', !hasGuess); $('#clueGuessEmpty').hidden = Boolean(hasGuess);
     if (hasGuess) { const guess = CARDS[selectedGuess]; setCardImage(guessImage, guess, true, elementAsset('未知.png')); $('#clueGuessName').textContent = guess.name; }
-    else { guessImage.hidden = true; $('#clueGuessName').textContent = '未指定'; }
+    else { clearCardImageRequest(guessImage); guessImage.hidden = true; $('#clueGuessName').textContent = '未指定'; }
   }
 
   function renderRewards() {
@@ -709,6 +741,7 @@
     if (visible) setCardImage($('#testTargetImage'), target, true, 'card-back.png');
     else {
       const image = $('#testTargetImage');
+      clearCardImageRequest(image);
       image.hidden = false;
       image.src = 'card-back.png';
       image.alt = '未知目标卡';
@@ -2489,7 +2522,7 @@
     });
     $('#undoBtn').addEventListener('click', () => {
       if (!undoStack.length) return;
-      state = undoStack.pop(); syncCurrentActivityHistory(); render(); toast('已撤销上一步。');
+      restoreUndoSnapshot(undoStack.pop()); syncCurrentActivityHistory(); render(); toast('已撤销上一步。');
     });
     $('#resetPuzzleBtn').addEventListener('click', () => {
       if (!confirm('重置本题会移除本题线索、挑战记录和本题得分，是否继续？')) return;
