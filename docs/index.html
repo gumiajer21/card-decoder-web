@@ -24,19 +24,26 @@
       <button id="settingsBtn" class="quiet-btn" type="button">活动设置</button>
       <button id="activityDataBtn" class="quiet-btn archive-btn" type="button">导入／导出活动</button>
       <label class="theme-control">界面 <select id="themeSelect"><option value="dark">深色</option><option value="light">浅色</option></select></label>
-      <label class="theme-control image-quality-control" hidden>卡图 <select id="imageQualitySelect"><option value="off">仿卡面信息</option></select></label>
+      <label class="theme-control image-quality-control">卡图 <select id="imageQualitySelect"><option value="off">仿卡面信息</option><option value="zh">中文高清（按需）</option></select></label>
+      <button id="imageCacheBtn" class="quiet-btn" type="button">卡图缓存</button>
       <button id="testModeBtn" class="quiet-btn" type="button">测试模式</button>
       <button id="gameModeBtn" class="quiet-btn" type="button">小游戏模式</button>
       <button id="simulationBtn" class="quiet-btn" type="button">规模测试</button>
     </div></div>
   </header>
 
+  <aside class="notice-ticker" aria-label="使用提示"><span class="notice-label">告示</span><div class="notice-viewport"><p>本工具改变不了玩家气运；如果遇到冷门卡，或随机到信息价值较低的提示，可能导致猜出所需次数增加。本工具只能提升长期整体期望，求解题数较少时结果方差可能很大。<strong>如有疑惑，可查看网站内置的常见问题解答。</strong>最近更新于 2026-09-28。</p></div></aside>
+
   <main class="workspace">
     <section class="panel state-panel">
       <div id="testBanner" class="test-banner" hidden><div class="target-summary"><img id="testTargetImage" class="card-art" src="card-back.png" alt="未知目标卡"><div><span id="sessionModeLabel">测试模式 · 目标卡公开</span><strong id="testTargetName"></strong><p id="testTargetStats"></p></div></div><div class="test-actions"><button id="autoJudgeBtn" class="primary-btn" type="button">自动判定当前挑战</button><button id="revealTargetBtn" class="quiet-btn" type="button" hidden>放弃并揭晓</button><button id="newTestTargetBtn" class="quiet-btn" type="button">换一张目标</button><button id="exitTestBtn" class="danger-btn" type="button">退出模式</button></div></div>
       <div class="section-heading"><div><p class="eyebrow">当前题状态</p><h2>六项线索</h2></div><div class="heading-actions"><span class="score-chip">本题 <strong id="puzzleScore">0</strong> 分</span><div class="candidate-pill"><span class="pulse"></span><strong id="candidateCount">—</strong> 张候选卡</div></div></div>
-      <div class="field-grid" id="fieldGrid" aria-label="六项字段"></div>
-      <div class="reward-wrap">
+      <div class="clue-showcase">
+        <figure class="clue-card-slot clue-target-slot"><div class="clue-card-shell"><img id="clueTargetImage" src="ui-assets/card-elements/%E6%9C%AA%E7%9F%A5.png" alt="未知目标卡"></div><figcaption><span>目标卡</span><strong id="clueTargetName">未知</strong></figcaption></figure>
+        <div class="field-grid" id="fieldGrid" aria-label="六项字段"></div>
+        <figure class="clue-card-slot clue-guess-slot is-empty" id="clueGuessSlot"><div class="clue-card-shell"><img id="clueGuessImage" alt="" hidden><div id="clueGuessEmpty" class="clue-card-empty">未指定</div></div><figcaption><span>猜测卡</span><strong id="clueGuessName">未指定</strong></figcaption></figure>
+      </div>
+      <div class="reward-wrap" hidden aria-hidden="true">
         <div class="reward-track" id="rewardTrack" aria-label="奖励进度"></div>
         <p id="matchedSummary">挑战累计相符 0 / 6</p>
       </div>
@@ -120,6 +127,7 @@
   <dialog id="testSetupDialog" class="modal">
     <form method="dialog" class="modal-card" id="testSetupForm"><header><div><p class="eyebrow">可控验证</p><h2>测试模式设置</h2></div><button id="testSetupCloseBtn" class="icon-btn" type="button" aria-label="关闭">×</button></header><div class="settings-grid compact-grid"><label><span>目标卡</span><select id="testTargetMode"><option value="random">随机选择</option><option value="specific">指定卡片</option></select></label><label><span>初始揭示</span><select id="testInitialField"><option value="random">随机字段</option><option value="border">卡片边框</option><option value="attribute">属性</option><option value="race">种族</option><option value="number">等级／阶级／连接</option><option value="attack">攻击力</option><option value="defense">守备力</option></select></label></div><div id="testTargetPicker" class="test-target-picker" hidden><label><span>搜索目标卡名</span><input id="testTargetSearch" type="search" autocomplete="off" placeholder="输入中文或英文卡名"></label><div id="testTargetResults" class="test-target-results"></div><div id="testTargetSelected" class="test-target-selected" hidden></div></div><p class="modal-note">目标卡会在测试模式中公开；初始揭示只决定开局显示哪一项，不额外消耗提示。</p><footer><button id="testSetupCancelBtn" class="quiet-btn" type="button">取消</button><button class="primary-btn" type="submit">开始测试</button></footer></form>
   </dialog>
+  <dialog id="imageCacheDialog" class="modal"><div class="modal-card compact-modal"><header><div><p class="eyebrow">中文高清卡图</p><h2>按需下载与缓存</h2></div><button id="imageCacheCloseBtn" class="icon-btn" type="button" aria-label="关闭">×</button></header><p class="modal-note">首次查看某张卡时，会下载包含约90张卡的资源包（通常10–15 MB），解包后保存在当前浏览器中。求解功能不依赖卡图。</p><div class="cache-status"><strong id="imageCacheStatus">正在读取缓存…</strong><span id="imageCacheUsage"></span></div><label class="cache-option"><input id="imageAutoDownload" type="checkbox"><span><b>允许按需下载高清卡图</b><small>关闭后只使用已经缓存的图片；没有缓存时显示仿卡。</small></span></label><div id="imagePackList" class="image-pack-list"></div><footer><button id="clearImageCacheBtn" class="danger-btn" type="button">清空卡图缓存</button><button id="imageCacheDoneBtn" class="primary-btn" type="button">完成</button></footer></div></dialog>
   <dialog id="challengeCompareDialog" class="modal compare-modal"><div class="modal-card"><header><div><p class="eyebrow">强制指定第一步</p><h2>挑战策略价值对比</h2></div><button id="challengeCompareCloseBtn" class="icon-btn" type="button" aria-label="关闭">×</button></header><div class="compare-search search-block"><label><span>添加对比卡</span><input id="compareCardSearch" type="search" autocomplete="off" placeholder="输入中文或英文卡名"></label><div id="compareCardResults" class="search-results" hidden></div></div><p class="modal-note">每张卡都被固定为第一步挑战，收到反馈后再由严格策略选择后续提示或挑战。小状态使用精确 Bellman，大状态使用与推荐相同的受限深度策略树；单步指标仅用于解释。</p><div id="comparisonProgress" class="comparison-progress" hidden>正在计算策略价值…</div><div id="comparisonList" class="comparison-list"></div><footer><button id="clearComparisonBtn" class="danger-btn" type="button">清空对比</button><button id="runStrategyComparisonBtn" class="quiet-btn" type="button">重新计算策略价值</button><button id="challengeCompareDoneBtn" class="primary-btn" type="button">完成</button></footer></div></dialog>
   <dialog id="activityDataDialog" class="modal">
     <div class="modal-card compact-modal"><header><div><p class="eyebrow">活动存档</p><h2>导入／导出活动</h2></div><button id="activityDataCloseBtn" class="icon-btn" type="button" aria-label="关闭">×</button></header><div class="archive-actions"><button id="prominentExportBtn" class="primary-btn" type="button">导出当前活动</button><button id="prominentImportBtn" class="quiet-btn" type="button">导入 JSON／文本记录</button><button id="manualImportBtn" class="quiet-btn" type="button">逐项补录行动</button></div><p class="modal-note">浏览器通常会自动保存本机进度；这里用于换设备、换浏览器，或根据游戏画面重新补录。</p></div>
@@ -155,6 +163,7 @@
       <header><div><p class="eyebrow">项目沿革</p><h2>原始版本与更新记录</h2></div><button id="changelogCloseBtn" class="icon-btn" type="button" aria-label="关闭">×</button></header>
       <section class="origin-note"><span>原始版本 · 2026-09-24</span><h3>从活动规则到本地求解器</h3><p>项目最初用于研究《游戏王：大师决斗》“卡片解码者”活动，将六项卡片信息、提示与挑战资源抽象为有限时域决策问题，并提供候选筛选、行动推荐、测试模式和规模模拟。</p></section>
       <div class="changelog-list">
+        <article><time>2026-09-28</time><div><h3>游戏化线索区与可选中文卡图</h3><p>六项信息改为目标卡、判定横条和猜测卡三栏展示；中文高清卡图可从 Release 按需下载并缓存在浏览器中，默认仍使用轻量仿卡。</p></div></article>
         <article><time>2026-09-27</time><div><h3>可控测试与策略价值对比</h3><p>测试模式可指定目标与初始揭示；支持分析单张挑战卡，并将自选卡固定为第一步后比较完整后续策略价值。</p></div></article>
         <article><time>2026-09-27</time><div><h3>灵摆判定与交互完善</h3><p>按官方规则拆分“相符项”和“整卡通关”，支持完整组合边框录入；修复等价行动剪枝、活动轨迹、挑战反馈、仿卡面与帮助入口。</p></div></article>
         <article><time>2026-09-26</time><div><h3>网页版与数据库体验</h3><p>推出无需安装的静态网页版，加入完整数据库筛选、图格浏览、活动导入导出、逐项补录、并行规模测试和匿名访问统计。</p></div></article>

@@ -68,7 +68,7 @@
     initialUsed: false,
     solved: false,
     theme: localStorage.getItem('card-decoder-theme') || 'dark',
-    imageQuality: 'off',
+    imageQuality: localStorage.getItem('card-decoder-image-quality') || 'off',
   });
 
   let state = loadState();
@@ -234,7 +234,116 @@
     return `data:image/svg+xml;charset=utf-8,${encodeURIComponent(svg)}`;
   }
 
+  const CARD_IMAGE_RELEASE_BASE = 'https://github.com/gumiajer21/card-decoder-web/releases/download/card-image-zh-v1/';
+  const CARD_IMAGE_CACHE_VERSION = '1';
+  const imagePackRequests = new Map();
+  let imageDbPromise = null;
+  const imageLoadObserver = 'IntersectionObserver' in window ? new IntersectionObserver((entries) => {
+    entries.filter((entry) => entry.isIntersecting).forEach((entry) => { imageLoadObserver.unobserve(entry.target); applyCachedCardImage(entry.target); });
+  }, { rootMargin: '240px 0px' }) : null;
+
   function cardImageUrl(card) { return simulatedCardDataUrl(card); }
+  function cardImageKey(id) { return `${CARD_IMAGE_CACHE_VERSION}:${String(id)}`; }
+  function cardImagePrefix(id) { return String(id).padStart(8, '0').slice(0, 2); }
+  function openImageDb() {
+    if (!('indexedDB' in window)) return Promise.reject(new Error('当前浏览器不支持卡图缓存'));
+    if (imageDbPromise) return imageDbPromise;
+    imageDbPromise = new Promise((resolve, reject) => {
+      const request = indexedDB.open('card-decoder-images', 1);
+      request.onupgradeneeded = () => {
+        const db = request.result;
+        if (!db.objectStoreNames.contains('images')) db.createObjectStore('images');
+        if (!db.objectStoreNames.contains('packs')) db.createObjectStore('packs');
+      };
+      request.onsuccess = () => resolve(request.result);
+      request.onerror = () => reject(request.error || new Error('无法打开卡图缓存'));
+    });
+    return imageDbPromise;
+  }
+  async function imageDbGet(store, key) {
+    const db = await openImageDb();
+    return new Promise((resolve, reject) => {
+      const request = db.transaction(store, 'readonly').objectStore(store).get(key);
+      request.onsuccess = () => resolve(request.result);
+      request.onerror = () => reject(request.error);
+    });
+  }
+  async function imageDbPutMany(store, entries) {
+    const db = await openImageDb();
+    return new Promise((resolve, reject) => {
+      const transaction = db.transaction(store, 'readwrite');
+      const objectStore = transaction.objectStore(store);
+      entries.forEach(([key, value]) => objectStore.put(value, key));
+      transaction.oncomplete = () => resolve();
+      transaction.onerror = () => reject(transaction.error);
+      transaction.onabort = () => reject(transaction.error || new Error('写入卡图缓存失败'));
+    });
+  }
+  function unzipStoredImages(buffer) {
+    const view = new DataView(buffer), bytes = new Uint8Array(buffer), decoder = new TextDecoder();
+    let eocd = -1;
+    for (let offset = bytes.length - 22; offset >= Math.max(0, bytes.length - 65557); offset--) {
+      if (view.getUint32(offset, true) === 0x06054b50) { eocd = offset; break; }
+    }
+    if (eocd < 0) throw new Error('资源包目录损坏');
+    const count = view.getUint16(eocd + 10, true);
+    let cursor = view.getUint32(eocd + 16, true);
+    const images = [];
+    for (let index = 0; index < count; index++) {
+      if (view.getUint32(cursor, true) !== 0x02014b50) throw new Error('资源包条目损坏');
+      const method = view.getUint16(cursor + 10, true);
+      const size = view.getUint32(cursor + 20, true);
+      const nameLength = view.getUint16(cursor + 28, true);
+      const extraLength = view.getUint16(cursor + 30, true);
+      const commentLength = view.getUint16(cursor + 32, true);
+      const localOffset = view.getUint32(cursor + 42, true);
+      const name = decoder.decode(bytes.subarray(cursor + 46, cursor + 46 + nameLength));
+      if (method !== 0) throw new Error('资源包采用了不支持的压缩方式');
+      const localNameLength = view.getUint16(localOffset + 26, true);
+      const localExtraLength = view.getUint16(localOffset + 28, true);
+      const start = localOffset + 30 + localNameLength + localExtraLength;
+      if (/^\d+\.webp$/i.test(name)) images.push([name.replace(/\.webp$/i, ''), new Blob([bytes.slice(start, start + size)], { type: 'image/webp' })]);
+      cursor += 46 + nameLength + extraLength + commentLength;
+    }
+    return images;
+  }
+  async function ensureImagePack(prefix) {
+    const packKey = `${CARD_IMAGE_CACHE_VERSION}:${prefix}`;
+    if (await imageDbGet('packs', packKey)) return;
+    if (imagePackRequests.has(prefix)) return imagePackRequests.get(prefix);
+    const promise = (async () => {
+      const response = await fetch(`${CARD_IMAGE_RELEASE_BASE}card-images-zh-${prefix}.zip`, { mode: 'cors' });
+      if (!response.ok) throw new Error(`卡图包 ${prefix} 下载失败（${response.status}）`);
+      const images = unzipStoredImages(await response.arrayBuffer());
+      await imageDbPutMany('images', images.map(([id, blob]) => [cardImageKey(id), blob]));
+      await imageDbPutMany('packs', [[packKey, { prefix, count: images.length, cachedAt: Date.now() }]]);
+    })().finally(() => imagePackRequests.delete(prefix));
+    imagePackRequests.set(prefix, promise);
+    return promise;
+  }
+  async function cachedCardImage(id) {
+    let blob = await imageDbGet('images', cardImageKey(id));
+    const allowDownload = localStorage.getItem('card-decoder-image-auto-download') !== 'false';
+    if (!blob && state.imageQuality === 'zh' && allowDownload) {
+      await ensureImagePack(cardImagePrefix(id));
+      blob = await imageDbGet('images', cardImageKey(id));
+    }
+    return blob || null;
+  }
+  async function applyCachedCardImage(element) {
+    const requestedId = element.dataset.requestedCardId;
+    if (!requestedId || state.imageQuality !== 'zh') return;
+    try {
+      const blob = await cachedCardImage(requestedId);
+      if (!blob || element.dataset.requestedCardId !== requestedId || state.imageQuality !== 'zh') return;
+      if (element.dataset.objectUrl) URL.revokeObjectURL(element.dataset.objectUrl);
+      const objectUrl = URL.createObjectURL(blob);
+      element.dataset.objectUrl = objectUrl;
+      element.src = objectUrl;
+      element.alt = `${element.dataset.requestedCardName || '卡片'} 中文卡图`;
+      element.dataset.zoomable = 'true';
+    } catch (_) {}
+  }
 
   function setCardImage(element, card, visible = true, fallback = '') {
     const url = cardImageUrl(card);
@@ -250,6 +359,13 @@
           element.dataset.zoomable = 'false';
         } else element.hidden = true;
       };
+      if (state.imageQuality === 'zh' && card?.ids?.[0]) {
+        const requestedId = String(card.ids[0]);
+        element.dataset.requestedCardId = requestedId;
+        element.dataset.requestedCardName = card.name;
+        if (imageLoadObserver && element.closest('#candidateTable, #groupDialogList, #historyList, #historyTimeline')) imageLoadObserver.observe(element);
+        else applyCachedCardImage(element);
+      }
     }
   }
 
@@ -484,7 +600,7 @@
     $('#rewardHelp').textContent = isPremiumPuzzle() ? `揭示只缩小候选集，不计入${config.milestones.map((item) => item.matches).join('／')}项高价值奖励。` : `本题每新增1个累计相符项记 ${config.regularMatchPoints} 点后段进度；揭示不计入。`;
     document.documentElement.dataset.theme = state.theme || 'dark';
     $('#themeSelect').value = state.theme || 'dark';
-    state.imageQuality = 'off';
+    state.imageQuality = ['off', 'zh'].includes(state.imageQuality) ? state.imageQuality : 'off';
     $('#imageQualitySelect').value = state.imageQuality;
     $('#calculateBtn').disabled = state.solved || state.challenges <= 0 || candidateCache.length === 0;
     $('#undoBtn').disabled = undoStack.length === 0;
@@ -503,38 +619,54 @@
   }
 
   function renderFields() {
-    $('#fieldGrid').innerHTML = FIELDS.map((field) => {
+    const displayOrder = ['border', 'attribute', 'number', 'race', 'attack', 'defense'];
+    $('#fieldGrid').innerHTML = displayOrder.map((key) => FIELDS.find((field) => field.key === key)).map((field) => {
       const known = state.known[field.key];
       const matched = Boolean(state.matchedMask & field.bit);
       return `<article class="field-card${known ? ' is-known' : ''}${matched ? ' is-matched' : ''}" data-field="${field.key}">
-        ${fieldGlyphHtml(field, known)}
-        <div class="field-content"><span>${field.label}</span><strong>${known ? escapeHtml(formatValue(field.key, known.value)) : '未知'}</strong><small>${known ? sourceLabel(known.source) : '等待线索'}</small></div>
-        <div class="field-state ${matched ? 'is-match' : known ? 'is-revealed' : ''}">${matched ? '✓ 相符' : known ? '已知' : '—'}</div>
+        <div class="field-lead">${fieldLeadHtml(field)}${field.key === 'attribute' || field.key === 'race' ? `<span>${field.label}</span>` : ''}</div>
+        <div class="field-rule"></div>
+        <div class="field-result${known ? '' : ' is-unknown'}">${fieldResultHtml(field, known)}</div>
       </article>`;
     }).join('');
+    renderClueCards();
   }
 
-  function fieldGlyphHtml(field, known) {
-    const svgOpen = '<svg viewBox="0 0 48 48" aria-hidden="true" focusable="false">';
+  const ELEMENT_ASSET_ROOT = 'ui-assets/card-elements/';
+  const ATTRIBUTE_ASSETS = { 1: 'attribute-earth.png', 2: 'attribute-water.png', 4: 'attribute-fire.png', 8: 'attribute-wind.png', 16: 'attribute-light.png', 32: 'attribute-dark.png', 64: 'attribute-divine.png' };
+  const RACE_ASSETS = { 1: '战士族.png', 2: '魔法师族.png', 4: '天使族.png', 8: '恶魔族.png', 16: '不死族.png', 32: '机械族.png', 64: '水族.png', 128: '炎族.png', 256: '岩石族.png', 512: '鸟兽族.png', 1024: '植物族.png', 2048: '昆虫族.png', 4096: '雷族.png', 8192: '龙族.png', 16384: '兽族.png', 32768: '兽战士族.png', 65536: '恐龙组.png', 131072: '鱼族.png', 262144: '海龙族.png', 1048576: '念动力族.png', 2097152: '幻神兽族.png', 8388608: '幻龙族.png', 16777216: '电子界族.png', 33554432: '幻想魔族.png' };
+  const BORDER_ASSETS = { 1: '通常normal.png', 2: '效果effect.png', 4: '融合fusion.png', 8: '同调synchro.png', 16: '超量xyz.png', 32: '连接link-已合并.png', 64: '仪式ritual.png', 129: '通常灵摆.png', 130: '效果灵摆.png', 132: '融合灵摆.png', 136: '同调灵摆.png', 144: '超量灵摆.png', 192: '仪式灵摆.png' };
+  function elementAsset(name) { return `${ELEMENT_ASSET_ROOT}${encodeURIComponent(name)}`; }
+  function elementImage(name, className, alt = '') { return `<img class="${className}" src="${elementAsset(name)}" alt="${escapeHtml(alt)}">`; }
+  function fieldLeadHtml(field) {
+    if (field.key === 'border') return elementImage('衍生物token.png', 'field-material frame-material', '卡片边框');
+    if (field.key === 'number') return `<span class="number-materials">${elementImage('等级level.png', 'number-symbol level-symbol', '等级')}${elementImage('阶级rank.png', 'number-symbol rank-symbol', '阶级')}${elementImage('连接标识.png', 'number-symbol link-symbol', '连接')}</span>`;
+    if (field.key === 'attack') return elementImage('攻击力.png', 'field-material stat-material', '攻击力');
+    if (field.key === 'defense') return elementImage('守备力.png', 'field-material stat-material', '守备力');
+    return '';
+  }
+  function fieldResultHtml(field, known) {
+    if (!known) return '<span class="unknown-dash">—</span>';
+    const value = Number(known.value);
     if (field.key === 'border') {
-      const colors = { 1: '#d6bd73', 2: '#9a5d36', 4: '#765099', 8: '#e8edf2', 16: '#222833', 32: '#315f9d', 64: '#5571ad', 128: '#48a58e' };
-      const selected = Object.entries(colors).filter(([bit]) => Number(known?.value || 0) & Number(bit)).map(([, color]) => color);
-      const fill = selected.length > 1 ? `linear-gradient(135deg,${selected.join(',')})` : selected[0] || '#506071';
-      return `<div class="field-glyph frame-glyph" style="--frame-fill:${fill}"><span></span><i></i></div>`;
+      const asset = BORDER_ASSETS[value];
+      return asset ? `${elementImage(asset, 'result-material result-frame', formatValue(field.key, value))}<span>${escapeHtml(formatValue(field.key, value))}</span>` : `<span>${escapeHtml(formatValue(field.key, value))}</span>`;
     }
-    if (field.key === 'attribute') {
-      const label = known ? (DATA.labels.attribute[known.value] || '?') : '属';
-      return `<div class="field-glyph attribute-glyph"><span>${escapeHtml(label)}</span></div>`;
-    }
-    if (field.key === 'race') return `<div class="field-glyph">${svgOpen}<path d="M14 31c1-7 5-11 10-11s9 4 10 11M18 18c0-5 2-8 6-8s6 3 6 8c0 4-2 7-6 7s-6-3-6-7Z"/><path d="M12 36h24"/></svg></div>`;
-    if (field.key === 'number') {
-      const border = Number(state.known.border?.value || 0);
-      if (border & 32) return `<div class="field-glyph">${svgOpen}<path d="m24 8 15 9v17l-15 8-15-8V17Z"/><path d="m24 14 9 6-9 16-9-16Z"/></svg></div>`;
-      if (border & 16) return `<div class="field-glyph">${svgOpen}<path d="M24 8 40 24 24 40 8 24Z"/><circle cx="24" cy="24" r="8"/></svg></div>`;
-      return `<div class="field-glyph">${svgOpen}<path d="m24 7 5 11 12 1-9 8 3 12-11-6-11 6 3-12-9-8 12-1Z"/></svg></div>`;
-    }
-    if (field.key === 'attack') return `<div class="field-glyph attack-glyph">${svgOpen}<path d="m11 37 7-7m3-3L36 12l1-5-5 1-15 15m4 4-5 5m-3 8-5-5 6-3 2 2Z"/><path d="m27 27 10 10m-4-1 4-4"/></svg></div>`;
-    return `<div class="field-glyph defense-glyph">${svgOpen}<path d="M24 7 38 12v10c0 9-5 15-14 20-9-5-14-11-14-20V12Z"/><path d="M24 13v22M16 20h16"/></svg></div>`;
+    if (field.key === 'attribute' && ATTRIBUTE_ASSETS[value]) return elementImage(ATTRIBUTE_ASSETS[value], 'result-material', formatValue(field.key, value));
+    if (field.key === 'race' && RACE_ASSETS[value]) return elementImage(RACE_ASSETS[value], 'result-material race-material', formatValue(field.key, value));
+    return `<strong>${escapeHtml(formatValue(field.key, known.value))}</strong>`;
+  }
+  function renderClueCards() {
+    const targetImage = $('#clueTargetImage');
+    const target = testSession ? CARDS[testSession.targetIndex] : null;
+    const targetVisible = Boolean(target && (testSession.mode === 'test' || testSession.revealed || state.solved));
+    if (targetVisible) { setCardImage(targetImage, target, true, elementAsset('未知.png')); $('#clueTargetName').textContent = target.name; }
+    else { targetImage.hidden = false; targetImage.src = elementAsset('未知.png'); targetImage.alt = '未知目标卡'; targetImage.dataset.zoomable = 'false'; $('#clueTargetName').textContent = '未知'; }
+    const guessSlot = $('#clueGuessSlot'), guessImage = $('#clueGuessImage');
+    const hasGuess = selectedGuess != null && CARDS[selectedGuess];
+    guessSlot.classList.toggle('is-empty', !hasGuess); $('#clueGuessEmpty').hidden = Boolean(hasGuess);
+    if (hasGuess) { const guess = CARDS[selectedGuess]; setCardImage(guessImage, guess, true, elementAsset('未知.png')); $('#clueGuessName').textContent = guess.name; }
+    else { guessImage.hidden = true; $('#clueGuessName').textContent = '未指定'; }
   }
 
   function renderRewards() {
@@ -684,16 +816,20 @@
 
   function groupRepresentativeNames(card) {
     const groups = [];
-    let aliases = [];
+    let aliases = [], seenEnglish = false;
+    const pureEnglish = (name) => /[A-Za-z]/.test(name) && !/[\u3400-\u9fff\u3040-\u30ff]/.test(name);
+    const hasJapaneseKana = (name) => /[\u3040-\u30ff]/.test(name);
     for (const name of card.names || [card.name]) {
-      aliases.push(name);
-      if (/[\u3040-\u30ff]/.test(name)) {
-        groups.push(aliases);
-        aliases = [];
+      if (aliases.length && seenEnglish && !pureEnglish(name)) {
+        if (hasJapaneseKana(name) || !/[A-Za-z]/.test(name)) { aliases.push(name); groups.push(aliases); aliases = []; seenEnglish = false; continue; }
+        groups.push(aliases); aliases = []; seenEnglish = false;
       }
+      aliases.push(name);
+      if (pureEnglish(name)) seenEnglish = true;
     }
     if (aliases.length) groups.push(aliases);
-    return groups.map((group) => group[0]);
+    const ids = card.ids || [], reliable = groups.length === ids.length;
+    return ids.map((id, index) => ({ name: reliable ? groups[index][0] : index === 0 ? card.name : `同组卡片 #${id}`, id }));
   }
 
   function openGroupDialog(index) {
@@ -701,11 +837,9 @@
     if (!card) return;
     $('#groupDialogTitle').textContent = card.name;
     $('#groupDialogSummary').textContent = `该判定组在当前卡池包含 ${weightOf(card).toLocaleString('zh-CN')} 张记录；以下按多语言别名组归并为代表卡。它们的六项判定完全相同，猜中其中任意一张均算正确。`;
-    const names = groupRepresentativeNames(card);
-    $('#groupDialogList').innerHTML = names.map((name) => {
-      const previewCard = { ...card, name };
-      return `<article class="group-card-entry"><img src="${cardImageUrl(previewCard)}" data-zoomable="true" alt="${escapeAttr(name)} 信息卡"><div><span>${escapeHtml(name)}</span><small>${escapeHtml(cardStats(card))}</small></div><button type="button" data-copy-name="${escapeAttr(name)}">复制卡名</button></article>`;
-    }).join('');
+    const members = groupRepresentativeNames(card);
+    $('#groupDialogList').innerHTML = members.map((member) => `<article class="group-card-entry"><img data-group-card-id="${member.id}" alt="${escapeAttr(member.name)} 卡图"><div><span>${escapeHtml(member.name)}</span><small>${escapeHtml(cardStats(card))}</small></div><button type="button" data-copy-name="${escapeAttr(member.name)}">复制卡名</button></article>`).join('');
+    $$('#groupDialogList img[data-group-card-id]').forEach((image, memberIndex) => setCardImage(image, { ...card, name: members[memberIndex].name, ids: [members[memberIndex].id] }));
     if (!$('#groupDialog').open) $('#groupDialog').showModal();
   }
 
@@ -1029,6 +1163,7 @@
     $('#challengeEvaluation').innerHTML = '';
     setCardImage($('#selectedCardImage'), card);
     renderTestMode();
+    renderClueCards();
   }
 
   function clearGuess() {
@@ -1040,6 +1175,7 @@
     $('#selectedCardImage').hidden = true;
     $('#challengeEvaluation').hidden = true;
     $('#challengeEvaluation').innerHTML = '';
+    renderClueCards();
     $('#feedbackGrid').innerHTML = '';
     $('#specialReveals').hidden = true;
     renderTestMode();
@@ -2221,6 +2357,40 @@
     });
   }
 
+  async function updateImageCacheStatus() {
+    const status = $('#imageCacheStatus'), usage = $('#imageCacheUsage'), list = $('#imagePackList');
+    try {
+      const db = await openImageDb();
+      const packs = await new Promise((resolve, reject) => {
+        const request = db.transaction('packs', 'readonly').objectStore('packs').getAll();
+        request.onsuccess = () => resolve(request.result || []);
+        request.onerror = () => reject(request.error);
+      });
+      const totalCards = packs.reduce((sum, pack) => sum + Number(pack.count || 0), 0);
+      status.textContent = `已缓存 ${packs.length} / 100 个资源包，共 ${totalCards.toLocaleString('zh-CN')} 张卡图`;
+      list.innerHTML = packs.length ? packs.sort((a, b) => a.prefix.localeCompare(b.prefix)).map((pack) => `<span>${escapeHtml(pack.prefix)}</span>`).join('') : '<div class="empty-inline">尚未缓存任何高清卡图。</div>';
+      if (navigator.storage?.estimate) {
+        const estimate = await navigator.storage.estimate();
+        usage.textContent = `浏览器存储约 ${(Number(estimate.usage || 0) / 1048576).toFixed(1)} MB${estimate.quota ? ` / ${(estimate.quota / 1073741824).toFixed(1)} GB` : ''}`;
+      } else usage.textContent = '';
+    } catch (error) {
+      status.textContent = error.message || '无法读取卡图缓存';
+      usage.textContent = '';
+      list.innerHTML = '';
+    }
+  }
+  async function clearImageCache() {
+    if (imageDbPromise) { try { (await imageDbPromise).close(); } catch (_) {} }
+    imageDbPromise = null;
+    await new Promise((resolve, reject) => {
+      const request = indexedDB.deleteDatabase('card-decoder-images');
+      request.onsuccess = () => resolve(); request.onerror = () => reject(request.error); request.onblocked = () => reject(new Error('缓存正在被其他页面使用'));
+    });
+    await updateImageCacheStatus();
+    refreshImageQuality();
+    toast('高清卡图缓存已清空。');
+  }
+
   function bindEvents() {
     $$('.tab').forEach((tab) => tab.addEventListener('click', () => switchTab(tab.dataset.tab)));
     $('#revealField').addEventListener('change', populateRevealValues);
@@ -2308,11 +2478,11 @@
       render();
     });
     $('#imageQualitySelect').addEventListener('change', (event) => {
-      state.imageQuality = 'off';
+      state.imageQuality = ['off', 'zh'].includes(event.target.value) ? event.target.value : 'off';
       localStorage.setItem('card-decoder-image-quality', state.imageQuality);
       saveState();
       refreshImageQuality();
-      toast('网页版使用轻量仿卡面信息卡。');
+      toast(state.imageQuality === 'zh' ? '已启用中文高清卡图；未缓存的资源包会按需下载。' : '已切换为轻量仿卡面信息卡。');
     });
     $('#undoBtn').addEventListener('click', () => {
       if (!undoStack.length) return;
@@ -2346,6 +2516,11 @@
       render();
     });
     $('#settingsBtn').addEventListener('click', openSettings);
+    $('#imageCacheBtn').addEventListener('click', () => { $('#imageAutoDownload').checked = localStorage.getItem('card-decoder-image-auto-download') !== 'false'; $('#imageCacheDialog').showModal(); updateImageCacheStatus(); });
+    $('#imageCacheCloseBtn').addEventListener('click', () => $('#imageCacheDialog').close());
+    $('#imageCacheDoneBtn').addEventListener('click', () => $('#imageCacheDialog').close());
+    $('#imageAutoDownload').addEventListener('change', (event) => { localStorage.setItem('card-decoder-image-auto-download', event.target.checked ? 'true' : 'false'); });
+    $('#clearImageCacheBtn').addEventListener('click', clearImageCache);
     $('#activityDataBtn').addEventListener('click',()=>$('#activityDataDialog').showModal());
     $('#activityDataCloseBtn').addEventListener('click',()=>$('#activityDataDialog').close());
     $('#prominentExportBtn').addEventListener('click',exportActivity);
