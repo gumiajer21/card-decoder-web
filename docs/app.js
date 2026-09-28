@@ -761,10 +761,11 @@
     fieldSelect.innerHTML = unknownFields.map((field) => `<option value="${field.key}">${field.label}</option>`).join('');
     if (unknownFields.some((field) => field.key === previous)) fieldSelect.value = previous;
     $('#addRevealBtn').disabled = unknownFields.length === 0 || state.solved;
-    $('#randomHintBtn').disabled = unknownFields.length === 0 || state.solved || state.hints <= 0;
+    $('#randomHintBtn').disabled = unknownFields.length === 0 || state.solved || state.hints <= 0 || !state.initialUsed;
+    $('#randomHintBtn').title = !state.initialUsed ? '请先录入本题的初始揭示' : '';
     const source = $('#revealSource');
     [...source.options].forEach((option) => {
-      option.disabled = option.value === 'initial' ? state.initialUsed : state.hints <= 0;
+      option.disabled = option.value === 'initial' ? state.initialUsed : state.hints <= 0 || !state.initialUsed;
     });
     if (source.selectedOptions[0]?.disabled) source.value = state.initialUsed ? 'hint' : 'initial';
     populateRevealValues();
@@ -967,7 +968,7 @@
         const field=fieldAliases.get(parts[2]); if(!field)throw new Error(`第 ${lineNumber+1} 行字段无效。`);
         const source=type==='初始'?'initial':'hint',value=parseImportedValue(field.key,parts[3]);
         if(next.known[field.key])throw new Error(`第 ${lineNumber+1} 行重复揭示了${field.label}。`);
-        if(source==='hint'){if(next.hints<=0)throw new Error(`第 ${lineNumber+1} 行提示库存不足。`);next.hints-=1;}else{if(next.initialUsed)throw new Error(`第 ${lineNumber+1} 行重复录入初始揭示。`);next.initialUsed=true;}
+        if(source==='hint'){if(!next.initialUsed)throw new Error(`第 ${lineNumber+1} 行不能在初始揭示之前使用提示。`);if(next.hints<=0)throw new Error(`第 ${lineNumber+1} 行提示库存不足。`);next.hints-=1;}else{if(next.initialUsed)throw new Error(`第 ${lineNumber+1} 行重复录入初始揭示。`);next.initialUsed=true;}
         next.known[field.key]={value,source};
         const log={type:'reveal',field:field.key,value,source,time:'导入',puzzle,activityId:next.activityId};next.logs.push(log);next.activityHistory.push(log);
       } else if(type==='挑战') {
@@ -1123,6 +1124,7 @@
   function randomHint() {
     const unknown = FIELDS.filter((field) => !state.known[field.key]);
     if (!unknown.length) { toast('六个字段都已经揭示。'); return; }
+    if (!state.initialUsed) { toast('请先录入本题的初始揭示，再使用提示。'); return; }
     if (state.hints <= 0) { toast('提示库存不足。'); return; }
     const field = unknown[Math.floor(Math.random() * unknown.length)];
     $('#revealField').value = field.key;
@@ -1139,6 +1141,7 @@
     if (state.known[field]) throw new Error('这个字段已经揭示。');
     if (source !== 'initial' && source !== 'hint') throw new Error('揭示来源无效。');
     if (source === 'initial' && state.initialUsed) throw new Error('本题的初始揭示已经录入。');
+    if (source === 'hint' && !state.initialUsed) throw new Error('请先录入本题的初始揭示，再使用提示。');
     if (source === 'hint' && state.hints <= 0) throw new Error('提示库存不足。');
     const trial = clone(state);
     trial.known[field] = { value: Number(value), source };
@@ -1220,7 +1223,12 @@
   function renderFeedback() {
     if (selectedGuess == null) return;
     const guess = CARDS[selectedGuess];
-    $('#feedbackGrid').innerHTML = FIELDS.map((field) => `<button class="feedback-toggle${feedbackMask & field.bit ? ' is-on' : ''}" type="button" data-feedback-bit="${field.bit}"><span>${field.label}</span><small>${escapeHtml(formatValue(field.key, fieldValue(guess, field.key)))}</small></button>`).join('');
+    $('#feedbackGrid').innerHTML = FIELDS.map((field) => {
+      const active = Boolean(feedbackMask & field.bit);
+      const value = field.key === 'border' && active && borderRevealValue != null ? borderRevealValue : fieldValue(guess, field.key);
+      const lead = `${fieldLeadHtml(field)}${field.key === 'attribute' || field.key === 'race' ? `<b>${field.label}</b>` : ''}`;
+      return `<button class="feedback-toggle${active ? ' is-on' : ''}" type="button" data-feedback-bit="${field.bit}" aria-pressed="${active}"><span class="feedback-lead">${lead}</span><span class="feedback-rule"></span><span class="feedback-value">${fieldResultHtml(field, { value })}</span></button>`;
+    }).join('');
     const borderOn = Boolean(feedbackMask & 1);
     const numberOn = Boolean(feedbackMask & 8);
     $('#feedbackConflict').hidden = true;
@@ -1392,6 +1400,7 @@
 
   async function calculateRecommendations() {
     if (!candidateCache.length || state.challenges <= 0 || state.solved) return null;
+    if (!testSession && !state.initialUsed && !confirm('尚未录入初始揭示，是否继续计算？')) return null;
     const token = ++calculationToken;
     const button = $('#calculateBtn');
     button.disabled = true;
@@ -2449,7 +2458,7 @@
       if (bit === 1) borderRevealValue = null;
       renderFeedback();
     });
-    $('#borderRevealChoices').addEventListener('click', (event) => { const button=event.target.closest('[data-border-reveal]'); if(!button)return; borderRevealValue=Number(button.dataset.borderReveal); populateBorderRevealChoices(); });
+    $('#borderRevealChoices').addEventListener('click', (event) => { const button=event.target.closest('[data-border-reveal]'); if(!button)return; borderRevealValue=Number(button.dataset.borderReveal); renderFeedback(); });
     $('#recordChallengeBtn').addEventListener('click', beginChallenge);
     $('#feedbackForm').addEventListener('submit', (event) => { event.preventDefault(); recordChallenge(); });
     $('#feedbackCloseBtn').addEventListener('click', () => $('#feedbackDialog').close());

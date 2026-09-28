@@ -200,9 +200,7 @@ select:focus, input:focus { border-color: var(--sky); box-shadow: 0 0 0 3px rgba
 .icon-btn { width: 32px; height: 32px; border: 1px solid var(--line); border-radius: 8px; background: rgba(7,16,31,.7); color: var(--muted); font-size: 1.1rem; }
 .feedback-grid { display: grid; grid-template-columns: repeat(3,1fr); gap: 8px; margin-top: 11px; }
 .feedback-toggle { min-height: 52px; display: grid; grid-template-columns: 22px 1fr; align-items: center; gap: 7px; padding: 8px 10px; border: 1px solid var(--line); border-radius: 9px; text-align: left; color: var(--muted); background: rgba(12,26,43,.54); }
-.feedback-toggle::before { content: ""; width: 18px; height: 18px; border: 1px solid #35516c; border-radius: 5px; }
 .feedback-toggle.is-on { border-color: rgba(94,234,212,.42); color: var(--text); background: rgba(20,184,166,.1); }
-.feedback-toggle.is-on::before { content: "✓"; display: grid; place-items: center; border-color: var(--cyan); background: var(--cyan); color: #04131a; font-weight: 900; }
 .feedback-toggle small { grid-column: 2; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: .66rem; color: var(--muted); }
 .feedback-conflict { position:sticky; z-index:30; top:-1px; margin:10px 0 12px; padding:14px 16px; border:2px solid rgba(225,29,72,.62); border-radius:11px; color:#ffe4e9; background:#9f1239; box-shadow:0 12px 32px rgba(90,8,32,.38); font-size:.94rem; font-weight:800; line-height:1.55; text-align:center; }
 .pendulum-check { display:flex!important; align-items:flex-start; gap:10px; padding:10px; border:1px solid rgba(248,212,119,.35); border-radius:9px; background:rgba(248,212,119,.07); }
@@ -655,6 +653,43 @@ html[data-theme="light"] .clue-card-shell { border-color:rgba(71,103,126,.28); b
   .clue-card-slot { width:min(100%,210px); justify-self:center; }
   .field-grid { width:min(100%,270px); justify-self:center; }
 }
+/* 游戏内风格的挑战反馈条：未点亮为深色，点亮后切换为橄榄金。 */
+.feedback-grid { display:grid; grid-template-columns:1fr; gap:8px; width:min(100%,440px); margin:14px auto 0; }
+.feedback-toggle {
+  --feedback-edge:8px;
+  position:relative;
+  min-height:72px;
+  display:grid;
+  grid-template-columns:118px minmax(16px,1fr) minmax(62px,auto);
+  align-items:center;
+  gap:7px;
+  padding:5px 11px;
+  overflow:hidden;
+  border:0;
+  border-radius:11px;
+  text-align:left;
+  color:#eef6ff;
+  background:linear-gradient(to bottom,rgba(158,190,211,.58) 0,transparent var(--feedback-edge)),linear-gradient(to top,rgba(158,190,211,.58) 0,transparent var(--feedback-edge)),linear-gradient(to right,rgba(158,190,211,.58) 0,transparent var(--feedback-edge)),linear-gradient(to left,rgba(158,190,211,.58) 0,transparent var(--feedback-edge)),linear-gradient(#152b40,#152b40);
+  box-shadow:none;
+}
+.feedback-toggle::before,.feedback-toggle.is-on::before { content:none !important; display:none !important; }
+.feedback-toggle.is-on {
+  color:#171704;
+  background:linear-gradient(to bottom,rgba(255,248,123,.76) 0,transparent var(--feedback-edge)),linear-gradient(to top,rgba(255,248,123,.76) 0,transparent var(--feedback-edge)),linear-gradient(to right,rgba(255,248,123,.76) 0,transparent var(--feedback-edge)),linear-gradient(to left,rgba(255,248,123,.76) 0,transparent var(--feedback-edge)),linear-gradient(#c2b91f,#c2b91f);
+}
+.feedback-lead,.feedback-value { min-width:0; display:flex; align-items:center; gap:7px; }
+.feedback-lead { justify-content:flex-start; }
+.feedback-lead>b { font-size:1.08rem; font-weight:900; white-space:nowrap; }
+.feedback-rule { height:1px; background:linear-gradient(90deg,transparent,rgba(207,225,238,.46),transparent); }
+.feedback-value { justify-content:flex-end; font-size:1rem; font-weight:850; white-space:nowrap; }
+.feedback-value strong { color:inherit; font-size:1.18rem; }
+.feedback-value .result-material { width:46px; height:46px; object-fit:contain; }
+.feedback-value .result-frame { width:39px; height:55px; }
+.feedback-toggle.is-on .feedback-rule { background:linear-gradient(90deg,transparent,rgba(255,255,202,.72),transparent); }
+html[data-theme="light"] .feedback-toggle { color:#172b3a; background:linear-gradient(to bottom,rgba(117,145,163,.42) 0,transparent var(--feedback-edge)),linear-gradient(to top,rgba(117,145,163,.42) 0,transparent var(--feedback-edge)),linear-gradient(to right,rgba(117,145,163,.42) 0,transparent var(--feedback-edge)),linear-gradient(to left,rgba(117,145,163,.42) 0,transparent var(--feedback-edge)),linear-gradient(#e6eef3,#e6eef3); }
+html[data-theme="light"] .feedback-toggle.is-on { color:#171704; background:linear-gradient(to bottom,rgba(255,248,123,.72) 0,transparent var(--feedback-edge)),linear-gradient(to top,rgba(255,248,123,.72) 0,transparent var(--feedback-edge)),linear-gradient(to right,rgba(255,248,123,.72) 0,transparent var(--feedback-edge)),linear-gradient(to left,rgba(255,248,123,.72) 0,transparent var(--feedback-edge)),linear-gradient(#c8bf24,#c8bf24); }
+@media (max-width:560px) { .feedback-grid { width:min(100%,400px); } .feedback-toggle { grid-template-columns:105px minmax(8px,1fr) minmax(54px,auto); padding-inline:8px; } }
+
 @media (max-width:430px) {
   .clue-showcase { gap:12px; }
   .field-card { grid-template-columns:112px minmax(6px,1fr) minmax(58px,auto); gap:5px; padding-inline:7px; }
@@ -724,3 +759,5 @@ html[data-theme="light"] .clue-card-shell { border-color:rgba(71,103,126,.28); b
   .comparison-metrics,.strategy-summary>div { grid-template-columns:repeat(2,minmax(0,1fr)); }
   .test-actions, .history-summary { grid-template-columns: 1fr; }
 }
+
+@media (max-width:430px) { .feedback-grid { grid-template-columns:1fr; } }
