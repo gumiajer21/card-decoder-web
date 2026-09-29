@@ -369,7 +369,7 @@ html[data-theme="light"] .history-group { background:rgba(246,250,252,.94); }
 .history-summary div { padding: 11px; border: 1px solid var(--line); border-radius: 10px; background: rgba(12,26,43,.5); }
 .history-summary span { display: block; color: var(--muted); font-size: .7rem; }
 .history-summary strong { display: block; margin-top: 5px; color: var(--sky); font-size: 1.1rem; }
-.history-timeline { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; max-height: 58vh; overflow: auto; }
+.history-timeline { display: grid; grid-template-columns: 1fr; gap: 8px; max-height: 58vh; overflow: auto; }
 .history-timeline .history-item { align-self: start; }
 .group-card-list { display:grid; grid-template-columns:repeat(auto-fill,minmax(210px,1fr)); gap:7px; max-height:58vh; overflow:auto; }
 .group-list-heading { grid-column:1 / -1; margin:10px 0 0; color:var(--muted); font-size:.76rem; letter-spacing:.06em; }
@@ -687,7 +687,7 @@ html[data-theme="light"] .clue-card-shell { border-color:rgba(71,103,126,.28); b
 .database-filters > #dbRace { order:4; }
 .database-filters > #clearDbFilters { order:7; grid-column:1 / -1; }
 /* 活动轨迹：卡图在上、六项反馈条在下，模拟游戏内挑战流程。 */
-.history-timeline { grid-template-columns:repeat(auto-fit,minmax(230px,1fr)); align-items:start; gap:12px; }
+.history-timeline { grid-template-columns:1fr; align-items:start; gap:12px; }
 .history-timeline .history-item.history-challenge { display:grid; grid-template-columns:1fr; gap:9px; padding:10px; }
 .history-challenge-card { display:grid; justify-items:center; gap:5px; min-width:0; }
 .history-challenge-card img,.history-challenge-card .history-symbol { width:92px; height:134px; aspect-ratio:59/86; object-fit:cover; border:1px solid var(--line); border-radius:6px; background:rgba(7,16,31,.58); }

@@ -26,8 +26,8 @@
       <label class="theme-control">界面 <select id="themeSelect"><option value="dark">深色</option><option value="light">浅色</option></select></label>
       <label class="theme-control image-quality-control">卡图 <select id="imageQualitySelect"><option value="off">仿卡面信息</option><option value="zh">中文高清（按需）</option></select></label>
       <button id="imageCacheBtn" class="quiet-btn" type="button">卡图缓存</button>
-      <button id="testModeBtn" class="quiet-btn" type="button">测试模式</button>
-      <button id="gameModeBtn" class="quiet-btn" type="button">小游戏模式</button>
+      <button id="testModeBtn" class="quiet-btn" type="button">演练模式</button>
+      <button id="gameModeBtn" class="quiet-btn" type="button" hidden>小游戏模式</button>
       <button id="simulationBtn" class="quiet-btn" type="button">规模测试</button>
     </div></div>
   </header>
@@ -117,7 +117,7 @@
 
   <dialog id="historyDialog" class="modal history-modal">
     <div class="modal-card">
-      <header><div><p class="eyebrow">活动与窗口记录</p><h2>解码档案</h2></div><button id="historyCloseBtn" class="icon-btn" type="button" aria-label="关闭">×</button></header>
+      <header><div><p class="eyebrow">当前活动</p><h2>解码档案</h2></div><div><button id="openHistoryArchiveBtn" class="quiet-btn" type="button">上一次活动</button><button id="historyCloseBtn" class="icon-btn" type="button" aria-label="关闭">×</button></div></header>
       <div class="history-summary" id="historySummary"></div>
       <div class="history-timeline" id="historyTimeline"></div>
       <footer><button id="clearArchiveBtn" class="danger-btn" type="button">清除旧活动档案</button><button id="exportActivityBtn" class="quiet-btn" type="button">导出当前活动</button><button id="importActivityBtn" class="quiet-btn" type="button">导入活动记录</button><button id="historyDoneBtn" class="primary-btn" type="button">完成</button></footer>

@@ -154,12 +154,15 @@
     if (state.activityHistory.length > 240) state.activityHistory.shift();
     const session = readSessionHistory(mode);
     session.push(record);
-    sessionStorage.setItem(historyStorageKey(mode), JSON.stringify(session.slice(-500)));
+    const keptIds = [...new Set(session.map((item) => item.activityId).filter((id) => id != null))].slice(-2);
+    sessionStorage.setItem(historyStorageKey(mode), JSON.stringify(session.filter((item) => item.activityId == null || keptIds.includes(item.activityId)).slice(-500)));
   }
 
   function syncCurrentActivityHistory() {
     const unrelated = readSessionHistory('activity').filter((item) => item.activityId !== state.activityId);
-    sessionStorage.setItem(SESSION_HISTORY_KEY, JSON.stringify([...unrelated, ...(state.activityHistory || [])].slice(-500)));
+    const merged = [...unrelated, ...(state.activityHistory || [])];
+    const keptIds = [...new Set(merged.map((item) => item.activityId).filter((id) => id != null))].slice(-2);
+    sessionStorage.setItem(SESSION_HISTORY_KEY, JSON.stringify(merged.filter((item) => item.activityId == null || keptIds.includes(item.activityId)).slice(-500)));
   }
 
   function removeActivityFromSession(activityId) {
@@ -730,7 +733,7 @@
   function renderTestMode() {
     const active = Boolean(testSession);
     $('#testBanner').hidden = !active;
-    $('#testModeBtn').textContent = active ? '正在测试' : '测试模式';
+    $('#testModeBtn').textContent = active ? '正在演练' : '演练模式';
     $('#testModeBtn').disabled = active;
     $('#gameModeBtn').textContent = active && testSession.mode === 'game' ? '正在游戏' : '小游戏模式';
     $('#gameModeBtn').disabled = active;
@@ -741,7 +744,7 @@
     }
     const target = CARDS[testSession.targetIndex];
     const visible = testSession.mode === 'test' || testSession.revealed || state.solved;
-    $('#sessionModeLabel').textContent = testSession.mode === 'test' ? '测试模式 · 目标卡公开' : visible ? '小游戏模式 · 答案已揭晓' : '小游戏模式 · 目标卡隐藏';
+    $('#sessionModeLabel').textContent = testSession.mode === 'test' ? '演练模式 · 目标卡公开' : visible ? '演练模式 · 答案已揭晓' : '演练模式 · 目标卡隐藏';
     $('#testTargetName').textContent = visible ? target.name : '？？？';
     $('#testTargetStats').textContent = visible ? cardStats(target) : `根据反馈筛选候选并猜中目标；当前剩余 ${candidateMass().toLocaleString('zh-CN')} 张。`;
     if (visible) setCardImage($('#testTargetImage'), target, true, 'card-back.png');
@@ -922,7 +925,7 @@
     });
   }
 
-  function historyGroups(history, expanded = false) {
+  function historyGroups(history, expanded = false, singleActivity = false) {
     const activities = new Map();
     const activityOrder = new Map();
     for (const log of history) {
@@ -933,12 +936,19 @@
       if (!activity.puzzles.has(puzzle)) activity.puzzles.set(puzzle, []);
       activity.puzzles.get(puzzle).push(log);
     }
-    return [...activities.values()].reverse().map((activity) => `<details class="history-group"><summary><span>第${activity.activity}次活动</span><small>${[...activity.puzzles.values()].reduce((sum, logs) => sum + logs.length, 0)} 条行动</small></summary><div class="history-puzzles">${[...activity.puzzles.entries()].map(([puzzle, logs]) => `<details class="history-puzzle"><summary><span>第${puzzle}题</span><small>${logs.length} 条行动</small></summary><div class="history-group-body">${logs.map((log) => historyItemHtml(log, expanded)).join('')}</div></details>`).join('')}</div></details>`).join('');
+    const groups = [...activities.values()].reverse();
+    if (singleActivity) {
+      const activity = groups[0];
+      if (!activity) return '';
+      return `<div class="history-single-title">当前活动</div><div class="history-puzzles">${[...activity.puzzles.entries()].map(([puzzle, logs]) => `<details class="history-puzzle" open><summary><span>第${puzzle}题</span><small>${logs.length} 条行动</small></summary><div class="history-group-body">${logs.map((log) => historyItemHtml(log, expanded)).join('')}</div></details>`).join('')}</div>`;
+    }
+    return groups.map((activity) => `<details class="history-group"><summary><span>第${activity.activity}次活动</span><small>${[...activity.puzzles.values()].reduce((sum, logs) => sum + logs.length, 0)} 条行动</small></summary><div class="history-puzzles">${[...activity.puzzles.entries()].map(([puzzle, logs]) => `<details class="history-puzzle"><summary><span>第${puzzle}题</span><small>${logs.length} 条行动</small></summary><div class="history-group-body">${logs.map((log) => historyItemHtml(log, expanded)).join('')}</div></details>`).join('')}</div></details>`).join('');
   }
 
   function renderHistory() {
     const container = $('#historyList');
-    const history = Array.isArray(state.activityHistory) ? state.activityHistory : [];
+    const allHistory = Array.isArray(state.activityHistory) ? state.activityHistory : [];
+    const history = allHistory.filter((item) => item.activityId == null || item.activityId === state.activityId);
     $('#historyCount').textContent = `${history.length} 条`;
     if (!container) return;
     if (!history.length) {
@@ -949,14 +959,26 @@
     hydrateCardImages(container);
   }
 
-  function openHistoryArchive() {
+  function openHistoryArchive(showAll = false) {
     const mode = testSession?.mode || 'activity';
     if (mode === 'activity') syncCurrentActivityHistory();
-    const history = readSessionHistory(mode);
+    const allHistory = readSessionHistory(mode);
+    let history = allHistory;
+    if (mode === 'activity') {
+      const currentId = state.activityId;
+      if (!showAll) history = allHistory.filter((item) => item.activityId == null || item.activityId === currentId);
+      else {
+        const previousIds = [...new Set(allHistory.map((item) => item.activityId).filter((id) => id != null && id !== currentId))];
+        const previousId = previousIds.at(-1);
+        history = previousId == null ? [] : allHistory.filter((item) => item.activityId === previousId);
+      }
+    }
     const challenges = history.filter((item) => item.type === 'challenge').length;
     const activities = new Set(history.map((item) => item.activityId)).size;
     $('#historySummary').innerHTML = `<div><span>本窗口活动</span><strong>${activities}</strong></div><div><span>挑战记录</span><strong>${challenges}</strong></div><div><span>全部操作</span><strong>${history.length}</strong></div>`;
-    $('#historyTimeline').innerHTML = history.length ? historyGroups(history, true) : '<div class="empty-inline">当前窗口还没有历史记录。</div>';
+    $('#historyDialog .eyebrow').textContent = showAll ? '上一次活动' : '当前活动';
+    $('#openHistoryArchiveBtn').textContent = showAll ? '当前活动' : '上一次活动';
+    $('#historyTimeline').innerHTML = history.length ? historyGroups(history, true, true) : `<div class="empty-inline">${showAll ? '没有上一次活动记录。' : '当前活动还没有记录。'}</div>`;
     hydrateCardImages($('#historyTimeline'));
     if (!$('#historyDialog').open) $('#historyDialog').showModal();
   }
@@ -2029,12 +2051,20 @@
     seedTestInitialReveal(testSession.initialField);
     undoStack = [];
     render();
-    toast(`${mode === 'game' ? '小游戏' : '测试'}模式已开始；退出后会恢复原活动进度。`);
+    toast(`演练模式已开始（${mode === 'game' ? '目标卡隐藏' : '目标卡公开'}）；退出后会恢复原活动进度。`);
   }
 
   function openTestSetup() {
-    pendingTestTarget = testSession?.mode === 'test' ? testSession.targetIndex : null;
+    if (!$('#testTargetVisibility')) {
+      const label = document.createElement('label');
+      label.innerHTML = '<span>目标卡显示</span><select id="testTargetVisibility"><option value="known">公开目标卡</option><option value="hidden">隐藏目标卡</option></select>';
+      $('#testTargetMode').parentElement.parentElement.insertBefore(label, $('#testTargetMode').parentElement);
+      $('#testTargetVisibility').addEventListener('change', syncTestTargetModeAvailability);
+    }
+    pendingTestTarget = testSession ? testSession.targetIndex : null;
+    $('#testTargetVisibility').value = testSession?.mode === 'game' ? 'hidden' : 'known';
     $('#testTargetMode').value = pendingTestTarget == null ? 'random' : 'specific';
+    syncTestTargetModeAvailability();
     $('#testInitialField').value = testSession?.initialField || 'random';
     $('#testTargetSearch').value = pendingTestTarget == null ? '' : CARDS[pendingTestTarget].name;
     renderTestTargetPicker(); $('#testSetupDialog').showModal();
@@ -2045,6 +2075,13 @@
     selected.innerHTML = pendingTestTarget == null ? '' : `<span>已选择目标</span><strong>${escapeHtml(CARDS[pendingTestTarget].name)}</strong><small>${escapeHtml(cardStats(CARDS[pendingTestTarget]))}</small>`;
     if (!specific) $('#testTargetResults').innerHTML = '';
   }
+  function syncTestTargetModeAvailability() {
+    const hiddenTarget = $('#testTargetVisibility').value === 'hidden';
+    const specificOption = $('#testTargetMode').querySelector('option[value="specific"]');
+    if (specificOption) specificOption.hidden = hiddenTarget;
+    if (hiddenTarget) { pendingTestTarget = null; $('#testTargetMode').value = 'random'; }
+    renderTestTargetPicker();
+  }
   function showTestTargetResults() {
     const query = $('#testTargetSearch').value.trim(), container = $('#testTargetResults'); if (!query) { container.innerHTML=''; return; }
     const results = searchCards(query); container.innerHTML = results.length ? results.slice(0,12).map((index)=>`<button class="search-result" type="button" data-test-target-index="${index}"><span><strong>${escapeHtml(CARDS[index].name)}</strong><small>${escapeHtml(cardStats(CARDS[index]))}</small></span><small>${weightOf(CARDS[index])}张同组</small></button>`).join('') : '<div class="empty-inline">没有找到卡名</div>';
@@ -2052,14 +2089,16 @@
   function applyTestSetup() {
     const specific = $('#testTargetMode').value === 'specific'; if (specific && pendingTestTarget == null) throw new Error('请先搜索并选择一张目标卡。');
     const options = { targetIndex:specific ? pendingTestTarget : undefined, initialField:$('#testInitialField').value }; $('#testSetupDialog').close();
-    if (testSession?.mode === 'test') {
-      const pool=state.pool, config=state.config, presetId=state.presetId; testSession.targetIndex=specific?pendingTestTarget:randomWeightedIndex(pool); testSession.initialField=options.initialField; testSession.revealed=false;
+    const mode = $('#testTargetVisibility').value === 'hidden' ? 'game' : 'test';
+    if (testSession) {
+      sessionStorage.removeItem(MODE_SESSION_HISTORY_KEY);
+      const pool=state.pool, config=state.config, presetId=state.presetId; testSession.targetIndex=specific?pendingTestTarget:randomWeightedIndex(pool); testSession.initialField=options.initialField; testSession.revealed=false; testSession.mode=mode;
       state=freshState(config); state.pool=pool; state.presetId=presetId; seedTestInitialReveal(testSession.initialField); undoStack=[]; clearGuess(); render(); toast('已按指定设置更换测试目标。'); return;
     }
-    startSession('test', options);
+    startSession(mode, options);
   }
   function startTestMode() { openTestSetup(); }
-  function startGameMode() { startSession('game'); }
+  function startGameMode() { openTestSetup(); }
 
   function seedTestInitialReveal(fieldKey = 'random') {
     const target = CARDS[testSession.targetIndex];
@@ -2101,7 +2140,7 @@
     undoStack = [];
     clearGuess();
     render();
-    toast('已退出测试模式，真实活动进度已恢复。');
+    toast('已退出演练模式，真实活动进度已恢复。');
   }
 
   function revealSessionTarget() {
@@ -2546,7 +2585,8 @@
     $('#candidateGridView').addEventListener('click',()=>{$('#candidateTable').dataset.view='grid';$('#candidateGridView').classList.add('is-active');$('#candidateTableView').classList.remove('is-active');renderCandidates();});
     $('#candidateTable').addEventListener('click',(event)=>{const groupButton=event.target.closest('[data-group-index]');if(groupButton)openGroupDialog(Number(groupButton.dataset.groupIndex));});
     $('#clearDbFilters').addEventListener('click',()=>{$('#candidateSearch').value='';$('.database-filters').querySelectorAll('input[type="checkbox"]').forEach((input)=>{input.checked=false;});$('.database-filters').querySelectorAll('input[type="search"]').forEach((input)=>{input.value='';});updateFilterCounts();renderCandidates();});
-    $('#openHistoryBtn').addEventListener('click', openHistoryArchive);
+    $('#openHistoryBtn').addEventListener('click', () => openHistoryArchive(false));
+    $('#openHistoryArchiveBtn').addEventListener('click', () => openHistoryArchive(!$('#historyDialog .eyebrow').textContent.includes('上一次')));
     $('#historyCloseBtn').addEventListener('click', () => $('#historyDialog').close());
     $('#historyDoneBtn').addEventListener('click', () => $('#historyDialog').close());
     $('#groupDialogClose').addEventListener('click', () => $('#groupDialog').close());
