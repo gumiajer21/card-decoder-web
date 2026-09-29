@@ -2425,7 +2425,30 @@
     const finished=parts.length>0&&parts.every((part)=>['complete','cancelled','error'].includes(part?.type));
     const cancelled=parts.some((part)=>part?.type==='cancelled');
     const workers=parts.map((part,index)=>({index:index+1,status:part?.type||'ready',completed:part?.results?.length||0,current:part?.current||null}));
-    return {type:finished?(cancelled?'cancelled':'complete'):'progress',completed:results.length,total,current:parts.find((part)=>part?.current&&part.type==='progress')?.current,workers,summary:{count:results.length,meanSolved,solvedLow:Math.max(0,meanSolved-margin),solvedHigh:Math.min(config.puzzles,meanSolved+margin),p10:percentile(solvedValues,.1),p50:percentile(solvedValues,.5),p90:percentile(solvedValues,.9),completion:p,completionLow:Math.max(0,center-wm),completionHigh:Math.min(1,center+wm),matchedItems:average('matchedItems'),hintsUsed:average('hintsUsed'),challengesUsed:average('challengesUsed'),distribution:Array.from({length:config.puzzles+1},(_,solved)=>({solved,count:results.filter((item)=>item.solved===solved).length})).filter((item)=>item.count),diagnostics,elapsed:(performance.now()-simulationStartedAt)/1000}};
+    const hintByPuzzle=Array.from({length:config.puzzles},(_,puzzle)=>results.reduce((sum,item)=>sum+Number(item.hintByPuzzle?.[puzzle]||0),0));
+    return {type:finished?(cancelled?'cancelled':'complete'):'progress',completed:results.length,total,current:parts.find((part)=>part?.current&&part.type==='progress')?.current,workers,summary:{count:results.length,meanSolved,solvedLow:Math.max(0,meanSolved-margin),solvedHigh:Math.min(config.puzzles,meanSolved+margin),p10:percentile(solvedValues,.1),p50:percentile(solvedValues,.5),p90:percentile(solvedValues,.9),completion:p,completionLow:Math.max(0,center-wm),completionHigh:Math.min(1,center+wm),matchedItems:average('matchedItems'),hintsUsed:average('hintsUsed'),challengesUsed:average('challengesUsed'),hintByPuzzle,distribution:Array.from({length:config.puzzles+1},(_,solved)=>({solved,count:results.filter((item)=>item.solved===solved).length})).filter((item)=>item.count),diagnostics,elapsed:(performance.now()-simulationStartedAt)/1000}};
+  }
+
+  function renderHintStatistics(snapshot = simulationSnapshot) {
+    const summary = snapshot?.summary;
+    const counts = summary?.hintByPuzzle || [];
+    const total = counts.reduce((sum, count) => sum + count, 0);
+    $('#hintStatisticsBtn').disabled = !summary?.count;
+    $('#hintStatisticsSummary').textContent = summary?.count
+      ? `已完成 ${summary.count} 轮活动，累计使用 ${total} 次提示。柱长表示各题占全部提示使用的相对次数。`
+      : '等待规模测试产生已完成活动的数据。';
+    $('#hintStatisticsChart').innerHTML = summary?.count
+      ? counts.map((count, index) => `<div class="hint-statistics-row"><span>第 ${index + 1} 题</span><i><b style="width:${total ? count / total * 100 : 0}%"></b></i><strong>${count} 次</strong></div>`).join('')
+      : '<div class="empty-inline">暂无提示使用数据。</div>';
+  }
+
+  function instrumentSimulationWorkerSource(source) {
+    const instrumented = source
+      .replace('let hints=config.totalHints,challenges=config.totalChallenges,solved=0,hintsUsed=0,challengesUsed=0,matchedItems=0;', 'let hints=config.totalHints,challenges=config.totalChallenges,solved=0,hintsUsed=0,challengesUsed=0,matchedItems=0,hintByPuzzle=Array(config.puzzles).fill(0);')
+      .replace('hints--;hintsUsed++;diagnostics.hintDecisions++;continue', 'hints--;hintsUsed++;hintByPuzzle[puzzle-1]++;diagnostics.hintDecisions++;continue')
+      .replace('}return{solved,hintsUsed,challengesUsed,matchedItems};}', '}return{solved,hintsUsed,challengesUsed,matchedItems,hintByPuzzle};}');
+    if (!instrumented.includes('hintByPuzzle[puzzle-1]') || !instrumented.includes('matchedItems,hintByPuzzle')) throw new Error('规模测试提示统计脚本未能加载。');
+    return instrumented;
   }
 
   function renderSimulationSnapshot(snapshot) {
@@ -2437,6 +2460,7 @@
     const runningText=current?`并行任务进行中 · 已完成 ${completed}/${total} · 当前第 ${current.puzzle} 题 · 候选 ${current.candidates.toLocaleString('zh-CN')} · 库存 ${current.hints}提示/${current.challenges}挑战`:`已完成 ${completed}/${total}`;
     $('#simulationProgress strong').textContent=type==='complete'?`已完成 ${completed}/${total}`:type==='cancelled'?`已停止，完成 ${completed}/${total}`:runningText;
     const d=summary.diagnostics,distribution=summary.distribution||[];
+    renderHintStatistics(snapshot);
     $('#simulationResults').innerHTML=`<div class="simulation-live"><strong>${type==='complete'?'测试完成':type==='cancelled'?'测试已停止':'后台计算中'}</strong><span>已完成 ${summary.count} / ${total} 个活动</span>${current?`<small>正在进行：第 ${current.round} 个活动，第 ${current.puzzle} 题；本轮已用 ${current.hintsUsed} 提示、${current.challengesUsed} 挑战</small>`:''}</div><div class="result-grid"><article><span>实时平均解题数</span><strong>${summary.meanSolved.toFixed(2)} / ${state.config.puzzles}</strong><small>95%区间 ${summary.solvedLow.toFixed(2)}–${summary.solvedHigh.toFixed(2)} · P10 ${summary.p10} · P50 ${summary.p50} · P90 ${summary.p90}</small></article><article><span>实时全题完成率</span><strong>${formatPercent(summary.completion)}</strong><small>Wilson 95%区间 ${formatPercent(summary.completionLow)}–${formatPercent(summary.completionHigh)}</small></article><article><span>平均首次相符项</span><strong>${summary.matchedItems.toFixed(2)}</strong><small>只统计挑战首次猜中的项目</small></article><article><span>平均资源消耗</span><strong>${summary.challengesUsed.toFixed(2)} 挑战</strong><small>${summary.hintsUsed.toFixed(2)} 提示</small></article><article><span>求解层级</span><strong>深度3：${d.depth3Calls}</strong><small>精确 ${d.exactCalls} · 深度2 ${d.depth2Calls} · 降级 ${d.fallbackCalls}</small></article><article><span>运行统计</span><strong>${summary.elapsed.toFixed(1)} 秒</strong><small>${d.solverCalls} 次求解 · ${d.cacheHits} 次缓存 · ${d.hintDecisions} 次提示</small></article></div><div class="histogram">${distribution.map(item=>`<div><span>解出${item.solved}题</span><i><b style="width:${item.count/Math.max(1,summary.count)*100}%"></b></i><strong>${item.count}</strong></div>`).join('')}</div><p class="simulation-disclaimer">测试在独立后台线程运行，关闭窗口不会中断；重新打开“规模测试”可查看最新进度。每一步使用与实操相同的策略树，结果评估当前策略，但不构成全局最优证明。</p>`;
   }
 
@@ -2460,6 +2484,8 @@
     const parallel = Math.min(rounds, hardwareCap, clampInt($('#simulationParallel').value, 1, 8, 4));
     simulationRunning = true;
     simulationStartedAt = performance.now();
+    simulationSnapshot = null;
+    renderHintStatistics(null);
     $('#runSimulationBtn').textContent = '停止后台测试';
     $('#simulationProgress').hidden = false;
     $('#simulationResults').innerHTML = '';
@@ -2469,7 +2495,7 @@
       $('#simulationResults').innerHTML='<div class="empty-inline">后台线程资源没有加载，请重新解压完整程序后再试。</div>';
       return;
     }
-    simulationWorkerUrl=URL.createObjectURL(new Blob([window.SIMULATION_WORKER_SOURCE],{type:'text/javascript'}));
+    simulationWorkerUrl=URL.createObjectURL(new Blob([instrumentSimulationWorkerSource(window.SIMULATION_WORKER_SOURCE)],{type:'text/javascript'}));
     const compactCards=CARDS.map(({b,a,r,n,nm,atk,def,wm,wa})=>({b,a,r,n,nm,atk,def,wm,wa}));
     const parts=Array.from({length:parallel},()=>null);
     simulationWorkers=Array.from({length:parallel},(_,index)=>{
@@ -2718,6 +2744,9 @@
     $('#changelogDoneBtn').addEventListener('click', () => $('#changelogDialog').close());
     $('#simulationCloseBtn').addEventListener('click', () => $('#simulationDialog').close());
     $('#simulationCancelBtn').addEventListener('click', () => $('#simulationDialog').close());
+    $('#hintStatisticsBtn').addEventListener('click', () => { renderHintStatistics(); $('#hintStatisticsDialog').showModal(); });
+    $('#hintStatisticsCloseBtn').addEventListener('click', () => $('#hintStatisticsDialog').close());
+    $('#hintStatisticsDoneBtn').addEventListener('click', () => $('#hintStatisticsDialog').close());
     $('#simulationForm').addEventListener('submit', (event) => { event.preventDefault(); runSimulation(); });
     $('#imageViewerClose').addEventListener('click', () => $('#imageViewerDialog').close());
     $('#imageViewerDialog').addEventListener('click', (event) => {

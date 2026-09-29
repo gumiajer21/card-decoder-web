@@ -7,7 +7,7 @@
   <meta name="description" content="游戏王大师决斗“卡片解码者”活动的在线分析、挑战推荐与模拟工具">
   <title>卡片解码者 · 在线求解器</title>
   <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%2307101f'/%3E%3Cpath d='M32 8l19 11v22L32 52 13 41V19z' fill='none' stroke='%235eead4' stroke-width='4'/%3E%3Cpath d='M32 18v28M20 25l24 14M44 25L20 39' stroke='%237dd3fc' stroke-width='3'/%3E%3C/svg%3E">
-  <link rel="stylesheet" href="styles.css?v=20260929-4">
+  <link rel="stylesheet" href="styles.css?v=20260929-5">
 </head>
 <body>
   <div class="ambient ambient-a"></div><div class="ambient ambient-b"></div>
@@ -181,15 +181,18 @@
       <p id="simulationConfigSummary" class="modal-note"></p>
       <div id="simulationProgress" class="simulation-progress" hidden><span></span><strong>准备中…</strong></div>
       <div id="simulationResults" class="simulation-results"><div class="empty-inline">选择轮数后运行，结果不会修改真实活动进度。</div></div>
-      <footer><button id="simulationCancelBtn" class="quiet-btn" type="button">关闭</button><button id="runSimulationBtn" class="primary-btn" type="submit">开始模拟</button></footer>
+      <footer><button id="simulationCancelBtn" class="quiet-btn" type="button">关闭</button><button id="hintStatisticsBtn" class="quiet-btn" type="button" disabled>提示统计</button><button id="runSimulationBtn" class="primary-btn" type="submit">开始模拟</button></footer>
     </form>
+  </dialog>
+  <dialog id="hintStatisticsDialog" class="modal hint-statistics-modal">
+    <div class="modal-card compact-modal"><header><div><p class="eyebrow">规模测试实时累计</p><h2>提示使用统计</h2></div><button id="hintStatisticsCloseBtn" class="icon-btn" type="button" aria-label="关闭">×</button></header><p id="hintStatisticsSummary" class="modal-note">等待规模测试产生数据。</p><div id="hintStatisticsChart" class="hint-statistics-chart"><div class="empty-inline">暂无提示使用数据。</div></div><footer><button id="hintStatisticsDoneBtn" class="primary-btn" type="button">完成</button></footer></div>
   </dialog>
   <dialog id="imageViewerDialog" class="image-viewer" aria-label="卡图放大查看">
     <button id="imageViewerClose" class="image-viewer-close" type="button" aria-label="关闭卡图">×</button>
     <figure><img id="imageViewerImage" alt=""><figcaption id="imageViewerCaption"></figcaption></figure>
   </dialog>
   <div class="toast" id="toast" role="status" aria-live="polite" hidden></div>
-  <script src="cards-data.js"></script><script src="presets.js"></script><script src="solver-core.js"></script><script src="simulation-worker-source.js"></script><script src="app.js?v=20260929-3"></script>
+  <script src="cards-data.js"></script><script src="presets.js"></script><script src="solver-core.js"></script><script src="simulation-worker-source.js"></script><script src="app.js?v=20260929-4"></script>
   <!-- Cloudflare Web Analytics -->
   <script type="module" src="https://static.cloudflareinsights.com/beacon.min.js" data-cf-beacon='{"token":"83ca65ed9d3246648e5c6740dfe02c33"}'></script>
   <!-- End Cloudflare Web Analytics -->
