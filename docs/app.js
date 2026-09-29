@@ -159,6 +159,11 @@
   }
 
   function syncCurrentActivityHistory() {
+    const mode = testSession?.mode || 'activity';
+    if (mode !== 'activity') {
+      sessionStorage.setItem(historyStorageKey(mode), JSON.stringify((state.activityHistory || []).slice(-500)));
+      return;
+    }
     const unrelated = readSessionHistory('activity').filter((item) => item.activityId !== state.activityId);
     const merged = [...unrelated, ...(state.activityHistory || [])];
     const keptIds = [...new Set(merged.map((item) => item.activityId).filter((id) => id != null))].slice(-2);
@@ -964,14 +969,12 @@
     if (mode === 'activity') syncCurrentActivityHistory();
     const allHistory = readSessionHistory(mode);
     let history = allHistory;
-    if (mode === 'activity') {
-      const currentId = state.activityId;
-      if (!showAll) history = allHistory.filter((item) => item.activityId == null || item.activityId === currentId);
-      else {
-        const previousIds = [...new Set(allHistory.map((item) => item.activityId).filter((id) => id != null && id !== currentId))];
-        const previousId = previousIds.at(-1);
-        history = previousId == null ? [] : allHistory.filter((item) => item.activityId === previousId);
-      }
+    const currentId = state.activityId;
+    if (!showAll) history = allHistory.filter((item) => item.activityId == null || item.activityId === currentId);
+    else {
+      const previousIds = [...new Set(allHistory.map((item) => item.activityId).filter((id) => id != null && id !== currentId))];
+      const previousId = previousIds.at(-1);
+      history = previousId == null ? [] : allHistory.filter((item) => item.activityId === previousId);
     }
     const challenges = history.filter((item) => item.type === 'challenge').length;
     const activities = new Set(history.map((item) => item.activityId)).size;
@@ -2619,7 +2622,13 @@
     });
     $('#undoBtn').addEventListener('click', () => {
       if (!undoStack.length) return;
-      restoreUndoSnapshot(undoStack.pop()); syncCurrentActivityHistory(); render(); toast('已撤销上一步。');
+      const historyWasOpen = $('#historyDialog').open;
+      const showingPrevious = historyWasOpen && $('#historyDialog .eyebrow').textContent.includes('上一次');
+      restoreUndoSnapshot(undoStack.pop());
+      syncCurrentActivityHistory();
+      render();
+      if (historyWasOpen) openHistoryArchive(showingPrevious);
+      toast('已撤销上一步。');
     });
     $('#resetPuzzleBtn').addEventListener('click', () => {
       if (!confirm('重置本题会移除本题线索、挑战记录和本题得分，是否继续？')) return;
