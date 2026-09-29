@@ -1292,7 +1292,8 @@
   function renderFeedback() {
     if (selectedGuess == null) return;
     const guess = CARDS[selectedGuess];
-    $('#feedbackGrid').innerHTML = FIELDS.map((field) => {
+    const feedbackFields = ['border', 'attribute', 'number', 'race', 'attack', 'defense'].map((key) => FIELDS.find((field) => field.key === key));
+    $('#feedbackGrid').innerHTML = feedbackFields.map((field) => {
       const active = Boolean(feedbackMask & field.bit);
       const value = field.key === 'border' && active && borderRevealValue != null ? borderRevealValue : fieldValue(guess, field.key);
       const lead = `${fieldLeadHtml(field)}${field.key === 'attribute' || field.key === 'race' ? `<b>${field.label}</b>` : ''}`;
