@@ -7,7 +7,13 @@
   const MASTER_DUEL_EXCLUDED_IDS = new Set([68798161]);
   const MASTER_DUEL_EXCLUDED_NAMES = new Set(['优秀精灵', 'サラブレッド・エルフ']);
   const excellentElfGroup = CARDS.find((card) => card.ids?.some((id) => MASTER_DUEL_EXCLUDED_IDS.has(Number(id))));
-  if (excellentElfGroup) excellentElfGroup.name = '教导铁锤提奥';
+  if (excellentElfGroup) {
+    // 以游戏内实测的 9,058 张为准：社区清单在该判定组中额外保留了一条记录。
+    excellentElfGroup.wm = Math.max(0, excellentElfGroup.wm - 1);
+    excellentElfGroup.name = '教导铁锤提奥';
+    DATA.stats.masterDuelMonsterRecords = Math.max(0, DATA.stats.masterDuelMonsterRecords - 1);
+    DATA.stats.masterDuelGroups = CARDS.filter((card) => card.wm > 0).length;
+  }
   const STORAGE_KEY = 'card-decoder-state-v4';
   const PRESET_KEY = 'card-decoder-custom-presets-v1';
   const SESSION_HISTORY_KEY = 'card-decoder-session-history-v1';
