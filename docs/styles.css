@@ -459,7 +459,8 @@ html[data-theme="light"] .history-group { background:rgba(246,250,252,.94); }
 .modal-card label > span { color: var(--muted); font-size: .72rem; }
 .modal-card input, .modal-card select { width: 100%; height: 40px; padding: 0 11px; border: 1px solid var(--line); border-radius: 8px; background: #0c1a2b; }
 .modal-card .wide { margin-bottom: 14px; }
-.info-card { width:min(900px, calc(100vw - 32px)); max-height:min(86vh, 920px); overflow:auto; }
+.info-modal { width:min(900px, calc(100vw - 32px)); }
+.info-card { width:auto; max-width:100%; max-height:none; overflow:visible; box-sizing:border-box; }
 .faq-list { display:grid; gap:9px; }
 .faq-list details { border:1px solid var(--line); border-radius:10px; background:rgba(12,26,43,.48); }
 .faq-list summary { padding:13px 15px; color:var(--text); font-size:.86rem; font-weight:750; line-height:1.5; cursor:pointer; }
