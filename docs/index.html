@@ -7,11 +7,12 @@
   <meta name="description" content="游戏王大师决斗“卡片解码者”活动的在线分析、挑战推荐与模拟工具">
   <title>卡片解码者 · 在线求解器</title>
   <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%2307101f'/%3E%3Cpath d='M32 8l19 11v22L32 52 13 41V19z' fill='none' stroke='%235eead4' stroke-width='4'/%3E%3Cpath d='M32 18v28M20 25l24 14M44 25L20 39' stroke='%237dd3fc' stroke-width='3'/%3E%3C/svg%3E">
-  <link rel="stylesheet" href="styles.css?v=20260929-6">
+  <link rel="stylesheet" href="styles.css?v=20260929-7">
 </head>
 <body>
   <div class="ambient ambient-a"></div><div class="ambient ambient-b"></div>
   <header class="topbar">
+    <div class="site-identity"><strong>卡片解码者</strong><span>在线求解器</span></div><div class="creator-notice"><strong>B站 @Gumiajer 制作 · 免费分享</strong><span>非官方研究与活动辅助工具，与科乐美无关；请勿用于商业用途。</span></div><span class="triple-icons" aria-label="点赞、投币、收藏、分享"><img src="bilibili-triple.gif" alt="点赞、投币、收藏、分享"></span>
     <a class="top-nav-link" href="https://www.bilibili.com/video/BV1pPhU6XEQu" target="_blank" rel="noopener noreferrer"><span aria-hidden="true">▶</span>B站介绍视频</a>
     <nav class="top-nav-actions" aria-label="工具与模式"><button id="testModeBtn" type="button"><span aria-hidden="true">◉</span>演练模式</button><button id="gameModeBtn" type="button" hidden>小游戏模式</button><button id="simulationBtn" type="button"><span aria-hidden="true">▦</span>规模测试</button><button id="settingsBtn" type="button"><span aria-hidden="true">⚙</span>设置</button></nav>
   </header>
@@ -21,7 +22,7 @@
   <main class="workspace">
     <section class="panel state-panel">
       <div id="testBanner" class="test-banner" hidden><div class="target-summary"><img id="testTargetImage" class="card-art" src="card-back.png" alt="未知目标卡"><div><span id="sessionModeLabel">测试模式 · 目标卡公开</span><strong id="testTargetName"></strong><p id="testTargetStats"></p></div></div><div class="test-actions"><button id="autoJudgeBtn" class="primary-btn" type="button">自动判定当前挑战</button><button id="revealTargetBtn" class="quiet-btn" type="button" hidden>放弃并揭晓</button><button id="newTestTargetBtn" class="quiet-btn" type="button">换一张目标</button><button id="exitTestBtn" class="danger-btn" type="button">退出模式</button></div></div>
-      <div class="section-heading"><div><p class="eyebrow">当前题状态</p><h2>六项线索</h2></div><div class="heading-actions"><span class="score-chip">本题 <strong id="puzzleScore">0</strong> 分</span><div class="candidate-pill"><span class="pulse"></span><strong id="candidateCount">—</strong> 张候选卡</div></div></div>
+      <div class="section-heading state-heading"><div><p class="eyebrow">当前题状态</p><h2>六项线索</h2></div><div class="clue-resource-stats" aria-label="活动状态"><label>题目 <input id="puzzleNumber" type="number" min="1" max="9" value="1" aria-label="题号"><span id="puzzleTotal">/ 9</span></label><label>提示 <input id="hintStock" type="number" min="0" value="3" aria-label="提示库存"></label><label>挑战 <input id="challengeStock" type="number" min="0" value="4" aria-label="挑战库存"></label><output id="premiumScore" hidden>0</output><output id="progressScore" hidden>0</output></div><div class="heading-actions"><span class="score-chip">本题 <strong id="puzzleScore">0</strong> 分</span><div class="candidate-pill"><span class="pulse"></span><strong id="candidateCount">—</strong> 张候选卡</div></div></div>
       <div class="clue-showcase">
         <figure class="clue-card-slot clue-target-slot"><div class="clue-card-shell"><img id="clueTargetImage" src="ui-assets/card-elements/%E6%9C%AA%E7%9F%A5.png" alt="未知目标卡"></div><figcaption><span>目标卡</span><strong id="clueTargetName">未知</strong></figcaption></figure>
         <div class="field-grid" id="fieldGrid" aria-label="六项字段"></div>
@@ -70,7 +71,9 @@
 
   <dialog id="settingsDialog" class="modal">
     <form method="dialog" class="modal-card" id="settingsForm">
-      <header><div><p class="eyebrow">规则配置</p><h2>活动设置</h2></div><button id="settingsCloseBtn" class="icon-btn" type="button" aria-label="关闭">×</button></header>
+      <header><div><p class="eyebrow">工具配置</p><h2>设置</h2></div><button id="settingsCloseBtn" class="icon-btn" type="button" aria-label="关闭">×</button></header>
+      <section class="settings-utilities"><h3>界面与资料</h3><div class="settings-utility-grid"><label>界面 <select id="themeSelect"><option value="dark">深色</option><option value="light">浅色</option></select></label><label>卡图 <select id="imageQualitySelect"><option value="off">仿卡面信息</option><option value="zh">中文高清（按需）</option></select></label><button id="imageCacheBtn" class="quiet-btn" type="button">卡图缓存</button><button id="activityDataBtn" class="quiet-btn" type="button">导入／导出活动</button><button id="faqBtn" class="quiet-btn" type="button">常见问题</button><button id="changelogBtn" class="quiet-btn" type="button">版本记录</button></div></section>
+      <details class="settings-rules"><summary>活动设置</summary><div class="settings-rules-body">
       <label class="wide"><span>预设</span><select id="presetSelect"></select></label>
       <div class="settings-grid">
         <label><span>题目数量</span><input id="cfgPuzzles" type="number" min="1" max="99"></label>
@@ -83,8 +86,7 @@
       </div>
       <section class="milestone-editor"><div class="subheading"><h3>累计相符奖励</h3><button id="addMilestoneBtn" class="quiet-btn" type="button">添加门槛</button></div><div id="milestoneRows"></div></section>
       <label class="wide"><span>保存为本机预设（可选）</span><div class="inline-control"><input id="customPresetName" type="text" placeholder="例如：下一期卡片解码者"><button id="savePresetBtn" class="quiet-btn" type="button">保存预设</button></div></label>
-      <p class="modal-note">提示和挑战按整个活动一次性配置，不再模拟逐日领取。前“高价值题数”题采用上方门槛和全中奖励；之后每次新增累计相符项按同一价值计算。</p>
-      <section class="settings-utilities"><h3>界面与资料</h3><div class="settings-utility-grid"><label>界面 <select id="themeSelect"><option value="dark">深色</option><option value="light">浅色</option></select></label><label>卡图 <select id="imageQualitySelect"><option value="off">仿卡面信息</option><option value="zh">中文高清（按需）</option></select></label><button id="imageCacheBtn" class="quiet-btn" type="button">卡图缓存</button><button id="activityDataBtn" class="quiet-btn" type="button">导入／导出活动</button><button id="faqBtn" class="quiet-btn" type="button">常见问题</button><button id="changelogBtn" class="quiet-btn" type="button">版本记录</button></div></section>
+      <p class="modal-note">提示和挑战按整个活动一次性配置，不再模拟逐日领取。前“高价值题数”题采用上方门槛和全中奖励；之后每次新增累计相符项按同一价值计算。</p></div></details>
       <footer><button id="settingsCancelBtn" class="quiet-btn" type="button">取消</button><button id="applySettingsBtn" class="primary-btn" type="submit">应用并开始新活动</button></footer>
     </form>
   </dialog>
@@ -177,7 +179,7 @@
     <figure><img id="imageViewerImage" alt=""><figcaption id="imageViewerCaption"></figcaption></figure>
   </dialog>
   <div class="toast" id="toast" role="status" aria-live="polite" hidden></div>
-  <script src="cards-data.js"></script><script src="presets.js"></script><script src="solver-core.js"></script><script src="simulation-worker-source.js"></script><script src="app.js?v=20260929-5"></script>
+  <script src="cards-data.js"></script><script src="presets.js"></script><script src="solver-core.js"></script><script src="simulation-worker-source.js"></script><script src="app.js?v=20260929-6"></script>
   <!-- Cloudflare Web Analytics -->
   <script type="module" src="https://static.cloudflareinsights.com/beacon.min.js" data-cf-beacon='{"token":"83ca65ed9d3246648e5c6740dfe02c33"}'></script>
   <!-- End Cloudflare Web Analytics -->

@@ -650,6 +650,30 @@ html[data-theme="light"] .public-links span { color:#fff; background:#1679b8; }
 html[data-theme="light"] .creator-notice strong { color:#126b9d; }
 html[data-theme="light"] .event-stats label { background:rgba(255,255,255,.78); }
 html[data-theme="light"] .score-chip { border-color:rgba(151,97,5,.28); background:rgba(184,122,12,.08); }
+
+/* Header and compact settings layout. */
+.topbar { display:grid; grid-template-columns:auto minmax(190px,1fr) 170px auto auto; grid-template-areas:"identity creator triple video actions"; align-items:center; gap:16px; }
+.site-identity { grid-area:identity; display:flex; align-items:baseline; gap:8px; white-space:nowrap; }
+.site-identity strong { font-size:1.48rem; letter-spacing:.08em; }
+.site-identity span { color:var(--muted); font-size:.78rem; font-weight:700; }
+.creator-notice { grid-area:creator; }
+.triple-icons { grid-area:triple; width:170px; height:43px; }
+.top-nav-link { grid-area:video; font-size:.94rem; }
+.top-nav-actions { grid-area:actions; flex-wrap:nowrap; }
+.top-nav-actions button { font-size:.94rem; white-space:nowrap; }
+.state-heading { display:grid; grid-template-columns:minmax(0,1fr) auto minmax(0,1fr); align-items:center; }
+.state-heading .heading-actions { justify-self:end; }
+.state-heading .clue-resource-stats { margin:0; }
+.clue-resource-stats label { border-color:rgba(126,181,223,.34); background:rgba(16,34,58,.72); color:var(--text); }
+.settings-utilities { margin:0 0 14px; padding:0 0 13px; }
+.settings-rules { border-top:1px solid var(--line); }
+.settings-rules summary { padding:12px 2px; color:var(--sky); cursor:pointer; font-size:.9rem; font-weight:800; }
+.settings-rules-body { display:grid; gap:12px; padding:0 1px 4px; }
+html[data-theme="light"] .clue-resource-stats label { border-color:rgba(20,102,132,.32); color:#245165; background:rgba(231,244,248,.96); }
+html[data-theme="light"] .clue-resource-stats input { color:#173e50; }
+@media (max-width:1500px) { .topbar { grid-template-columns:auto minmax(180px,1fr) 170px auto; grid-template-areas:"identity creator triple video" "actions actions actions actions"; } .top-nav-actions { justify-content:flex-end; } }
+@media (max-width:900px) { .topbar { grid-template-columns:minmax(0,1fr) auto; grid-template-areas:"identity video" "creator creator" "triple actions"; } .state-heading { grid-template-columns:1fr auto; } .state-heading .clue-resource-stats { grid-column:1 / -1; grid-row:2; margin-top:8px; } .state-heading .heading-actions { grid-column:2; grid-row:1; } }
+@media (max-width:700px) { .topbar { display:flex; align-items:flex-start; flex-wrap:wrap; padding:13px 15px; } .creator-notice { width:100%; order:3; text-align:left; } .triple-icons { order:4; } .top-nav-link { margin-left:auto; } .top-nav-actions { width:100%; order:5; justify-content:flex-start; flex-wrap:wrap; } .state-heading { display:flex; align-items:flex-start; flex-wrap:wrap; } .state-heading .clue-resource-stats { width:100%; justify-content:flex-start; order:3; } .state-heading .heading-actions { margin-left:auto; } .settings-utility-grid { grid-template-columns:1fr; } }
 html[data-theme="light"] .tab { border-color:rgba(39,78,105,.2); color:#526b7d; background:#edf3f7; }
 html[data-theme="light"] .tab.is-active { border-color:rgba(22,121,184,.42); color:#0c659d; background:#dceef9; }
 html[data-theme="light"] .border-reveal-wrap,html[data-theme="light"] .pendulum-check { border-color:rgba(145,101,10,.35); background:rgba(212,166,40,.10); }
@@ -845,3 +869,8 @@ html[data-theme="light"] .feedback-toggle.is-on { color:#171704; background:line
 }
 
 @media (max-width:430px) { .feedback-grid { grid-template-columns:1fr; } }
+
+/* Keep the rebuilt header independent from the legacy responsive grid. */
+@media (max-width:1500px) { .topbar { display:grid; grid-template-columns:auto minmax(180px,1fr) 170px auto; grid-template-areas:"identity creator triple video" "actions actions actions actions"; } .top-nav-actions { justify-content:flex-end; } }
+@media (max-width:900px) { .topbar { display:grid; grid-template-columns:minmax(0,1fr) auto; grid-template-areas:"identity video" "creator creator" "triple actions"; } }
+@media (max-width:700px) { .topbar { display:flex; align-items:flex-start; flex-wrap:wrap; } }
