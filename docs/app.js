@@ -2012,6 +2012,7 @@
     undoStack = [];
     selectedGuess = null;
     feedbackMask = 0;
+    $('#settingsRulesDialog').close();
     $('#settingsDialog').close();
     render();
     toast('新活动设置已应用。');
@@ -2684,6 +2685,7 @@
       render();
     });
     $('#settingsBtn').addEventListener('click', openSettings);
+    $('#activitySettingsBtn').addEventListener('click', () => { $('#settingsDialog').close(); $('#settingsRulesDialog').showModal(); });
     $('#imageCacheBtn').addEventListener('click', () => { $('#imageAutoDownload').checked = localStorage.getItem('card-decoder-image-auto-download') !== 'false'; $('#imageCacheDialog').showModal(); updateImageCacheStatus(); });
     $('#imageCacheCloseBtn').addEventListener('click', () => $('#imageCacheDialog').close());
     $('#imageCacheDoneBtn').addEventListener('click', () => $('#imageCacheDialog').close());
@@ -2704,7 +2706,8 @@
     $('#manualRecordList').addEventListener('click',(event)=>{const button=event.target.closest('[data-remove-manual]');if(!button)return;manualImportLines.splice(Number(button.dataset.removeManual),1);renderManualImport();});
     $('#manualImportForm').addEventListener('submit',(event)=>{event.preventDefault();applyManualRecords();});
     $('#settingsCloseBtn').addEventListener('click', () => $('#settingsDialog').close());
-    $('#settingsCancelBtn').addEventListener('click', () => $('#settingsDialog').close());
+    $('#settingsRulesCloseBtn').addEventListener('click', () => $('#settingsRulesDialog').close());
+    $('#settingsCancelBtn').addEventListener('click', () => $('#settingsRulesDialog').close());
     $('#presetSelect').addEventListener('change', () => {
       const preset = allPresets().find((item) => item.id === $('#presetSelect').value);
       if (preset) fillSettingsForm(preset.config);

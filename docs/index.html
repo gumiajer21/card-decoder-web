@@ -70,10 +70,15 @@
   <div class="solved-banner" id="solvedBanner" hidden><div><span>题目完成</span><strong id="solvedRewardText">六项全部相符</strong></div><button id="nextPuzzleBtn" class="primary-btn" type="button">进入下一题</button></div>
 
   <dialog id="settingsDialog" class="modal">
-    <form method="dialog" class="modal-card" id="settingsForm">
+    <div class="modal-card compact-modal">
       <header><div><p class="eyebrow">工具配置</p><h2>设置</h2></div><button id="settingsCloseBtn" class="icon-btn" type="button" aria-label="关闭">×</button></header>
-      <section class="settings-utilities"><h3>界面与资料</h3><div class="settings-utility-grid"><label>界面 <select id="themeSelect"><option value="dark">深色</option><option value="light">浅色</option></select></label><label>卡图 <select id="imageQualitySelect"><option value="off">仿卡面信息</option><option value="zh">中文高清（按需）</option></select></label><button id="imageCacheBtn" class="quiet-btn" type="button">卡图缓存</button><button id="activityDataBtn" class="quiet-btn" type="button">导入／导出活动</button><button id="faqBtn" class="quiet-btn" type="button">常见问题</button><button id="changelogBtn" class="quiet-btn" type="button">版本记录</button></div></section>
-      <details class="settings-rules"><summary>活动设置</summary><div class="settings-rules-body">
+      <section class="settings-utilities"><h3>界面与资料</h3><div class="settings-utility-grid"><label>界面 <select id="themeSelect"><option value="dark">深色</option><option value="light">浅色</option></select></label><label>卡图 <select id="imageQualitySelect"><option value="off">仿卡面信息</option><option value="zh">中文高清（按需）</option></select></label><button id="imageCacheBtn" class="quiet-btn" type="button">卡图缓存</button><button id="activityDataBtn" class="quiet-btn" type="button">导入／导出活动</button><button id="faqBtn" class="quiet-btn" type="button">常见问题</button><button id="changelogBtn" class="quiet-btn" type="button">版本记录</button><button id="activitySettingsBtn" class="quiet-btn" type="button">活动设置</button></div></section>
+    </div>
+  </dialog>
+
+  <dialog id="settingsRulesDialog" class="modal">
+    <form method="dialog" class="modal-card" id="settingsForm">
+      <header><div><p class="eyebrow">规则配置</p><h2>活动设置</h2></div><button id="settingsRulesCloseBtn" class="icon-btn" type="button" aria-label="关闭">×</button></header>
       <label class="wide"><span>预设</span><select id="presetSelect"></select></label>
       <div class="settings-grid">
         <label><span>题目数量</span><input id="cfgPuzzles" type="number" min="1" max="99"></label>
@@ -86,7 +91,7 @@
       </div>
       <section class="milestone-editor"><div class="subheading"><h3>累计相符奖励</h3><button id="addMilestoneBtn" class="quiet-btn" type="button">添加门槛</button></div><div id="milestoneRows"></div></section>
       <label class="wide"><span>保存为本机预设（可选）</span><div class="inline-control"><input id="customPresetName" type="text" placeholder="例如：下一期卡片解码者"><button id="savePresetBtn" class="quiet-btn" type="button">保存预设</button></div></label>
-      <p class="modal-note">提示和挑战按整个活动一次性配置，不再模拟逐日领取。前“高价值题数”题采用上方门槛和全中奖励；之后每次新增累计相符项按同一价值计算。</p></div></details>
+      <p class="modal-note">提示和挑战按整个活动一次性配置，不再模拟逐日领取。前“高价值题数”题采用上方门槛和全中奖励；之后每次新增累计相符项按同一价值计算。</p>
       <footer><button id="settingsCancelBtn" class="quiet-btn" type="button">取消</button><button id="applySettingsBtn" class="primary-btn" type="submit">应用并开始新活动</button></footer>
     </form>
   </dialog>
@@ -179,7 +184,7 @@
     <figure><img id="imageViewerImage" alt=""><figcaption id="imageViewerCaption"></figcaption></figure>
   </dialog>
   <div class="toast" id="toast" role="status" aria-live="polite" hidden></div>
-  <script src="cards-data.js"></script><script src="presets.js"></script><script src="solver-core.js"></script><script src="simulation-worker-source.js"></script><script src="app.js?v=20260929-6"></script>
+  <script src="cards-data.js"></script><script src="presets.js"></script><script src="solver-core.js"></script><script src="simulation-worker-source.js"></script><script src="app.js?v=20260929-7"></script>
   <!-- Cloudflare Web Analytics -->
   <script type="module" src="https://static.cloudflareinsights.com/beacon.min.js" data-cf-beacon='{"token":"83ca65ed9d3246648e5c6740dfe02c33"}'></script>
   <!-- End Cloudflare Web Analytics -->
