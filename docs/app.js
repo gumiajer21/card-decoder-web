@@ -628,13 +628,6 @@
     migrateChallengeSemantics();
     candidateCache = candidateIndices();
     const config = state.config;
-    $('#puzzleNumber').value = state.puzzle;
-    $('#puzzleNumber').max = config.puzzles;
-    $('#puzzleTotal').textContent = `/ ${config.puzzles}`;
-    $('#hintStock').value = state.hints;
-    $('#challengeStock').value = state.challenges;
-    $('#premiumScore').textContent = state.premiumScore;
-    $('#progressScore').textContent = state.progressScore;
     $('#puzzleScore').textContent = state.puzzleScore;
     $('#poolMode').value = state.pool;
     const dataDate = DATA.generatedAt ? new Date(DATA.generatedAt).toLocaleDateString('zh-CN') : '未知日期';
@@ -669,7 +662,7 @@
 
   function renderFields() {
     const displayOrder = ['border', 'attribute', 'number', 'race', 'attack', 'defense'];
-    $('#fieldGrid').innerHTML = displayOrder.map((key) => FIELDS.find((field) => field.key === key)).map((field) => {
+    $('#fieldGrid').innerHTML = `<div class="clue-resource-stats" aria-label="活动状态"><label>题目 <input id="puzzleNumber" type="number" min="1" max="${state.config.puzzles}" value="${state.puzzle}" aria-label="题号"><span id="puzzleTotal">/ ${state.config.puzzles}</span></label><label>提示 <input id="hintStock" type="number" min="0" value="${state.hints}" aria-label="提示库存"></label><label>挑战 <input id="challengeStock" type="number" min="0" value="${state.challenges}" aria-label="挑战库存"></label><output id="premiumScore" hidden>0</output><output id="progressScore" hidden>0</output></div>` + displayOrder.map((key) => FIELDS.find((field) => field.key === key)).map((field) => {
       const known = state.known[field.key];
       const matched = Boolean(state.matchedMask & field.bit);
       return `<article class="field-card${known ? ' is-known' : ''}${matched ? ' is-matched' : ''}" data-field="${field.key}">
@@ -2595,11 +2588,11 @@
       selectGuess(Number(button.dataset.recommendIndex));
       window.scrollTo({ top: 0, behavior: 'smooth' });
     });
-    [['puzzleNumber', 'puzzle'], ['hintStock', 'hints'], ['challengeStock', 'challenges']].forEach(([id, key]) => {
-      $(`#${id}`).addEventListener('change', (event) => {
-        const value = Math.max(Number(event.target.min || 0), Number(event.target.value) || 0);
-        pushUndo(); state[key] = Math.min(Number(event.target.max || Infinity), value); render();
-      });
+    $('#fieldGrid').addEventListener('change', (event) => {
+      const key = { puzzleNumber: 'puzzle', hintStock: 'hints', challengeStock: 'challenges' }[event.target.id];
+      if (!key) return;
+      const value = Math.max(Number(event.target.min || 0), Number(event.target.value) || 0);
+      pushUndo(); state[key] = Math.min(Number(event.target.max || Infinity), value); render();
     });
     $('#poolMode').addEventListener('change', (event) => {
       pushUndo(); state.pool = event.target.value; render();

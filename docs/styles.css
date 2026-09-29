@@ -57,6 +57,11 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 2px s
   background: rgba(5, 11, 22, .78);
   backdrop-filter: blur(18px);
 }
+.topbar { display:flex; justify-content:space-between; gap:18px; padding-block:11px; }
+.top-nav-link,.top-nav-actions button { display:inline-flex; align-items:center; gap:7px; min-height:32px; padding:4px 7px; border:0; border-radius:6px; color:var(--text); background:transparent; font-size:.82rem; font-weight:700; text-decoration:none; }
+.top-nav-link span,.top-nav-actions button span { color:var(--sky); font-size:1rem; }
+.top-nav-link:hover,.top-nav-actions button:hover { color:var(--cyan); background:rgba(125,211,252,.08); }
+.top-nav-actions { display:flex; align-items:center; justify-content:flex-end; gap:5px; flex-wrap:wrap; }
 .brand { display: flex; align-items: center; gap: 13px; flex: 0 0 auto; }
 .brand-zone { display:grid; gap:11px; justify-items:start; flex:0 0 auto; }
 .brand h1 { margin: 0; font-size: 1.22rem; letter-spacing: .12em; }
@@ -120,6 +125,16 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 2px s
 .clue-card-slot figcaption span { color:var(--muted); font-size:.96rem; }
 .clue-card-slot figcaption strong { overflow:hidden; color:var(--text); font-size:1.1rem; text-overflow:ellipsis; white-space:nowrap; }
 .field-grid { grid-area:fields; display:grid; grid-template-columns:1fr; gap:7px; width:100%; }
+.clue-resource-stats { display:flex; align-items:center; justify-content:center; gap:6px; margin-bottom:3px; }
+.clue-resource-stats label { display:flex; align-items:center; gap:4px; min-height:27px; padding:0 7px; border:1px solid var(--line); border-radius:7px; color:var(--muted); background:rgba(16,34,58,.55); font-size:.68rem; white-space:nowrap; }
+.clue-resource-stats input { width:29px; padding:0; border:0; outline:0; color:var(--text); background:transparent; font-weight:800; text-align:center; }
+.clue-resource-stats span { font-weight:700; }
+.settings-utilities { margin-top:14px; padding-top:13px; border-top:1px solid var(--line); }
+.settings-utilities h3 { margin:0 0 9px; font-size:.9rem; }
+.settings-utility-grid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:8px; }
+.settings-utility-grid label,.settings-utility-grid button { min-height:36px; }
+.settings-utility-grid label { display:flex; align-items:center; justify-content:space-between; gap:8px; padding:0 10px; border:1px solid var(--line); border-radius:8px; color:var(--muted); font-size:.8rem; }
+.settings-utility-grid select { max-width:110px; border:0; background:transparent; }
 .field-card { --edge-fade:10px; position:relative; min-height:70px; display:grid; grid-template-columns:116px minmax(8px,1fr) minmax(62px,auto); align-items:center; gap:7px; padding:5px 10px; overflow:hidden; border:0; border-radius:11px; background:linear-gradient(to bottom,rgba(158,190,211,.62) 0,transparent var(--edge-fade)),linear-gradient(to top,rgba(158,190,211,.62) 0,transparent var(--edge-fade)),linear-gradient(to right,rgba(158,190,211,.62) 0,transparent var(--edge-fade)),linear-gradient(to left,rgba(158,190,211,.62) 0,transparent var(--edge-fade)),linear-gradient(#152b40,#152b40); box-shadow:none; }
 .field-card.is-known { background:linear-gradient(to bottom,rgba(255,248,123,.76) 0,transparent var(--edge-fade)),linear-gradient(to top,rgba(255,248,123,.76) 0,transparent var(--edge-fade)),linear-gradient(to right,rgba(255,248,123,.76) 0,transparent var(--edge-fade)),linear-gradient(to left,rgba(255,248,123,.76) 0,transparent var(--edge-fade)),linear-gradient(#c2b91f,#c2b91f); }
 .field-lead { min-width:0; display:flex; align-items:center; justify-content:flex-start; gap:9px; }

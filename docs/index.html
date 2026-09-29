@@ -7,29 +7,13 @@
   <meta name="description" content="游戏王大师决斗“卡片解码者”活动的在线分析、挑战推荐与模拟工具">
   <title>卡片解码者 · 在线求解器</title>
   <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%2307101f'/%3E%3Cpath d='M32 8l19 11v22L32 52 13 41V19z' fill='none' stroke='%235eead4' stroke-width='4'/%3E%3Cpath d='M32 18v28M20 25l24 14M44 25L20 39' stroke='%237dd3fc' stroke-width='3'/%3E%3C/svg%3E">
-  <link rel="stylesheet" href="styles.css?v=20260929-5">
+  <link rel="stylesheet" href="styles.css?v=20260929-6">
 </head>
 <body>
   <div class="ambient ambient-a"></div><div class="ambient ambient-b"></div>
   <header class="topbar">
-    <div class="brand-zone"><div class="brand"><div class="brand-mark" aria-hidden="true"><span></span><span></span><span></span></div><div><h1>卡片解码者</h1><p>大师决斗在线求解器</p></div></div><nav class="public-links" aria-label="帮助与项目信息"><button id="faqBtn" type="button"><span>?</span>常见问题</button><button id="changelogBtn" type="button"><span>↻</span>版本记录</button><a href="https://www.bilibili.com/video/BV1pPhU6XEQu" target="_blank" rel="noopener noreferrer"><span>▶</span>B站介绍视频</a></nav></div>
-    <div class="creator-notice"><strong>B站 @Gumiajer 制作 · 免费分享</strong><span>非官方研究与活动辅助工具，与科乐美无关；请勿用于商业用途。</span></div>
-    <span class="triple-icons" aria-label="点赞、投币、收藏、分享"><img src="bilibili-triple.gif" alt="点赞、投币、收藏、分享"></span>
-    <div class="top-controls"><div class="event-stats" aria-label="活动状态">
-      <label>题目 <input id="puzzleNumber" type="number" min="1" max="9" value="1" aria-label="题号"><span id="puzzleTotal">/ 9</span></label>
-      <label>提示 <input id="hintStock" type="number" min="0" value="3" aria-label="提示库存"></label>
-      <label>挑战 <input id="challengeStock" type="number" min="0" value="4" aria-label="挑战库存"></label>
-      <output id="premiumScore" hidden>0</output><output id="progressScore" hidden>0</output>
-    </div><div class="event-actions" aria-label="工具与模式">
-      <button id="settingsBtn" class="quiet-btn" type="button">活动设置</button>
-      <button id="activityDataBtn" class="quiet-btn archive-btn" type="button">导入／导出活动</button>
-      <label class="theme-control">界面 <select id="themeSelect"><option value="dark">深色</option><option value="light">浅色</option></select></label>
-      <label class="theme-control image-quality-control">卡图 <select id="imageQualitySelect"><option value="off">仿卡面信息</option><option value="zh">中文高清（按需）</option></select></label>
-      <button id="imageCacheBtn" class="quiet-btn" type="button">卡图缓存</button>
-      <button id="testModeBtn" class="quiet-btn" type="button">演练模式</button>
-      <button id="gameModeBtn" class="quiet-btn" type="button" hidden>小游戏模式</button>
-      <button id="simulationBtn" class="quiet-btn" type="button">规模测试</button>
-    </div></div>
+    <a class="top-nav-link" href="https://www.bilibili.com/video/BV1pPhU6XEQu" target="_blank" rel="noopener noreferrer"><span aria-hidden="true">▶</span>B站介绍视频</a>
+    <nav class="top-nav-actions" aria-label="工具与模式"><button id="testModeBtn" type="button"><span aria-hidden="true">◉</span>演练模式</button><button id="gameModeBtn" type="button" hidden>小游戏模式</button><button id="simulationBtn" type="button"><span aria-hidden="true">▦</span>规模测试</button><button id="settingsBtn" type="button"><span aria-hidden="true">⚙</span>设置</button></nav>
   </header>
 
   <aside class="notice-ticker" aria-label="使用提示"><span class="notice-label">告示</span><div class="notice-viewport"><p>本工具改变不了玩家气运；如果遇到冷门卡，或随机到信息价值较低的提示，可能导致猜出所需次数增加。本工具只能提升长期整体期望，求解题数较少时结果方差可能很大。<strong>如有疑惑，可查看网站内置的常见问题解答。</strong>最近更新于 2026-09-29。</p></div></aside>
@@ -100,6 +84,7 @@
       <section class="milestone-editor"><div class="subheading"><h3>累计相符奖励</h3><button id="addMilestoneBtn" class="quiet-btn" type="button">添加门槛</button></div><div id="milestoneRows"></div></section>
       <label class="wide"><span>保存为本机预设（可选）</span><div class="inline-control"><input id="customPresetName" type="text" placeholder="例如：下一期卡片解码者"><button id="savePresetBtn" class="quiet-btn" type="button">保存预设</button></div></label>
       <p class="modal-note">提示和挑战按整个活动一次性配置，不再模拟逐日领取。前“高价值题数”题采用上方门槛和全中奖励；之后每次新增累计相符项按同一价值计算。</p>
+      <section class="settings-utilities"><h3>界面与资料</h3><div class="settings-utility-grid"><label>界面 <select id="themeSelect"><option value="dark">深色</option><option value="light">浅色</option></select></label><label>卡图 <select id="imageQualitySelect"><option value="off">仿卡面信息</option><option value="zh">中文高清（按需）</option></select></label><button id="imageCacheBtn" class="quiet-btn" type="button">卡图缓存</button><button id="activityDataBtn" class="quiet-btn" type="button">导入／导出活动</button><button id="faqBtn" class="quiet-btn" type="button">常见问题</button><button id="changelogBtn" class="quiet-btn" type="button">版本记录</button></div></section>
       <footer><button id="settingsCancelBtn" class="quiet-btn" type="button">取消</button><button id="applySettingsBtn" class="primary-btn" type="submit">应用并开始新活动</button></footer>
     </form>
   </dialog>
@@ -192,7 +177,7 @@
     <figure><img id="imageViewerImage" alt=""><figcaption id="imageViewerCaption"></figcaption></figure>
   </dialog>
   <div class="toast" id="toast" role="status" aria-live="polite" hidden></div>
-  <script src="cards-data.js"></script><script src="presets.js"></script><script src="solver-core.js"></script><script src="simulation-worker-source.js"></script><script src="app.js?v=20260929-4"></script>
+  <script src="cards-data.js"></script><script src="presets.js"></script><script src="solver-core.js"></script><script src="simulation-worker-source.js"></script><script src="app.js?v=20260929-5"></script>
   <!-- Cloudflare Web Analytics -->
   <script type="module" src="https://static.cloudflareinsights.com/beacon.min.js" data-cf-beacon='{"token":"83ca65ed9d3246648e5c6740dfe02c33"}'></script>
   <!-- End Cloudflare Web Analytics -->
