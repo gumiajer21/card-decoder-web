@@ -5,6 +5,7 @@
   const CARDS = DATA.cards;
   // 已由游戏内实测确认：优秀精灵不属于大师决斗卡池；同判定组其余三张仍有效。
   const MASTER_DUEL_EXCLUDED_IDS = new Set([68798161]);
+  const MASTER_DUEL_EXCLUDED_NAMES = new Set(['优秀精灵', 'サラブレッド・エルフ']);
   const excellentElfGroup = CARDS.find((card) => card.ids?.some((id) => MASTER_DUEL_EXCLUDED_IDS.has(Number(id))));
   if (excellentElfGroup) excellentElfGroup.name = '教导铁锤提奥';
   const STORAGE_KEY = 'card-decoder-state-v4';
@@ -266,6 +267,10 @@
   function preferredCardId(card, pool = state.pool) {
     const ids = card?.ids || [];
     return (pool === 'md' ? ids.find((id) => !MASTER_DUEL_EXCLUDED_IDS.has(Number(id))) : ids[0]) || ids[0];
+  }
+  function cardNamesForPool(card, pool = state.pool) {
+    const names = card?.names || (card?.name ? [card.name] : []);
+    return pool === 'md' ? names.filter((name) => !MASTER_DUEL_EXCLUDED_NAMES.has(name)) : names;
   }
   function cardImageUrl(card) { return simulatedCardDataUrl(card); }
   function cardImageKey(id) { return `${CARD_IMAGE_CACHE_VERSION}:${String(id)}`; }
@@ -824,7 +829,7 @@
     const numbers = selected('#dbNumber'), attacks = selected('#dbAttack'), defenses = selected('#dbDefense');
     const filtered = source.filter((index) => {
       const card = CARDS[index];
-      if (query && !card.names.some((name) => normalizeSearch(name).includes(query))) return false;
+      if (query && !cardNamesForPool(card).some((name) => normalizeSearch(name).includes(query))) return false;
       if (border.size && !border.has(card.b)) return false;
       if (attribute.size && !attribute.has(card.a)) return false;
       if (race.size && !race.has(card.r)) return false;
@@ -853,8 +858,8 @@
     container.innerHTML = (grid ? '' : `<div class="candidate-row header"><span>卡图</span><span>代表卡</span><span>边框</span><span>属性</span><span>种族</span><span>数值</span><span>攻／守</span><span>卡数／占当前范围</span></div>`) + top.map((index) => {
       const card = CARDS[index];
       const probability = total ? weightOf(card) / total : 0;
-      if (grid) return `<article class="database-card"><img data-card-index="${index}" alt="${escapeAttr(card.name)}卡图"><strong title="${escapeAttr(card.names.join('、'))}">${escapeHtml(card.name)}</strong><small>${escapeHtml(formatBorder(card.b))} · ${escapeHtml(DATA.labels.attribute[card.a] || card.a)} · ${escapeHtml(DATA.labels.race[card.r] || card.r)}</small><span>${card.n} · ${formatStat(card.atk)}／${formatStat(card.def)}</span><button class="group-open-btn" type="button" data-group-index="${index}">查看同组 ${weightOf(card)} 张</button></article>`;
-      return `<div class="candidate-row"><img class="candidate-thumb" data-card-index="${index}" alt="${escapeAttr(card.name)}卡图"><strong title="${escapeAttr(card.names.join('、'))}">${escapeHtml(card.name)}</strong><span>${escapeHtml(formatBorder(card.b))}</span><span>${escapeHtml(DATA.labels.attribute[card.a] || card.a)}</span><span>${escapeHtml(DATA.labels.race[card.r] || card.r)}</span><span>${card.n}</span><span>${formatStat(card.atk)}／${formatStat(card.def)}</span><button class="group-open-btn" type="button" data-group-index="${index}">${weightOf(card).toLocaleString('zh-CN')}张 · ${formatPercent(probability)}</button></div>`;
+      if (grid) return `<article class="database-card"><img data-card-index="${index}" alt="${escapeAttr(card.name)}卡图"><strong title="${escapeAttr(cardNamesForPool(card).join('、'))}">${escapeHtml(card.name)}</strong><small>${escapeHtml(formatBorder(card.b))} · ${escapeHtml(DATA.labels.attribute[card.a] || card.a)} · ${escapeHtml(DATA.labels.race[card.r] || card.r)}</small><span>${card.n} · ${formatStat(card.atk)}／${formatStat(card.def)}</span><button class="group-open-btn" type="button" data-group-index="${index}">查看同组 ${weightOf(card)} 张</button></article>`;
+      return `<div class="candidate-row"><img class="candidate-thumb" data-card-index="${index}" alt="${escapeAttr(card.name)}卡图"><strong title="${escapeAttr(cardNamesForPool(card).join('、'))}">${escapeHtml(card.name)}</strong><span>${escapeHtml(formatBorder(card.b))}</span><span>${escapeHtml(DATA.labels.attribute[card.a] || card.a)}</span><span>${escapeHtml(DATA.labels.race[card.r] || card.r)}</span><span>${card.n}</span><span>${formatStat(card.atk)}／${formatStat(card.def)}</span><button class="group-open-btn" type="button" data-group-index="${index}">${weightOf(card).toLocaleString('zh-CN')}张 · ${formatPercent(probability)}</button></div>`;
     }).join('');
     hydrateCardImages(container);
   }
@@ -1047,7 +1052,7 @@
         const log={type:'reveal',field:field.key,value,source,time:'导入',puzzle,activityId:next.activityId};next.logs.push(log);next.activityHistory.push(log);
       } else if(type==='挑战') {
         if(next.challenges<=0)throw new Error(`第 ${lineNumber+1} 行挑战库存不足。`);
-        const name=normalizeSearch(parts[2]),guess=CARDS.findIndex((card)=>card.names.some((item)=>normalizeSearch(item)===name));
+        const name=normalizeSearch(parts[2]),guess=CARDS.findIndex((card)=>cardNamesForPool(card).some((item)=>normalizeSearch(item)===name));
         if(guess<0)throw new Error(`第 ${lineNumber+1} 行找不到挑战卡“${parts[2]}”。`);
         let mask=0;for(const token of (parts[3]||'').split(/[,，/／]+/).map((item)=>item.trim()).filter(Boolean)){const field=fieldAliases.get(token);if(!field)throw new Error(`第 ${lineNumber+1} 行无法识别点亮字段“${token}”。`);mask|=field.bit;}
         const borderReveal=mask&1?parseImportedValue('border',parts[4]):null,numberReveal=mask&8?parseImportedValue('number',parts[5]):null;
@@ -1111,7 +1116,7 @@
 
   function resolveManualCard() {
     const name=normalizeSearch($('#manualCardName').value);
-    const index=CARDS.findIndex((card)=>card.names.some((item)=>normalizeSearch(item)===name));
+    const index=CARDS.findIndex((card)=>cardNamesForPool(card).some((item)=>normalizeSearch(item)===name));
     return index;
   }
 
@@ -1248,7 +1253,7 @@
       const card = CARDS[index];
       if (weightOf(card) <= 0) continue;
       let best = 99;
-      for (const name of card.names) {
+      for (const name of cardNamesForPool(card)) {
         const candidate = normalizeSearch(name);
         const position = candidate.indexOf(normalized);
         if (position >= 0) best = Math.min(best, position === 0 ? 0 : 1);
