@@ -732,8 +732,12 @@ html[data-theme="light"] .clue-card-shell { border-color:rgba(71,103,126,.28); b
   .field-grid { width:min(100%,270px); justify-self:center; }
 }
 /* 数据库筛选顺序与六项信息保持一致：边框、属性、等级／阶级／连接、种族、攻击、守备。 */
+.database-filters > #dbBorder { order:1; }
+.database-filters > #dbAttribute { order:2; }
 .database-filters > #dbNumber { order:3; }
 .database-filters > #dbRace { order:4; }
+.database-filters > #dbAttack { order:5; }
+.database-filters > #dbDefense { order:6; }
 .database-filters > #clearDbFilters { order:7; grid-column:1 / -1; }
 /* 活动轨迹：卡图在上、六项反馈条在下，模拟游戏内挑战流程。 */
 .history-timeline { grid-template-columns:1fr; align-items:start; gap:12px; }
