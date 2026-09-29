@@ -3,6 +3,10 @@
 
   const DATA = window.CARD_DATA;
   const CARDS = DATA.cards;
+  // 已由游戏内实测确认：优秀精灵不属于大师决斗卡池；同判定组其余三张仍有效。
+  const MASTER_DUEL_EXCLUDED_IDS = new Set([68798161]);
+  const excellentElfGroup = CARDS.find((card) => card.ids?.some((id) => MASTER_DUEL_EXCLUDED_IDS.has(Number(id))));
+  if (excellentElfGroup) excellentElfGroup.name = '教导铁锤提奥';
   const STORAGE_KEY = 'card-decoder-state-v4';
   const PRESET_KEY = 'card-decoder-custom-presets-v1';
   const SESSION_HISTORY_KEY = 'card-decoder-session-history-v1';
@@ -259,6 +263,10 @@
     entries.filter((entry) => entry.isIntersecting).forEach((entry) => { imageLoadObserver.unobserve(entry.target); applyCachedCardImage(entry.target); });
   }, { rootMargin: '240px 0px' }) : null;
 
+  function preferredCardId(card, pool = state.pool) {
+    const ids = card?.ids || [];
+    return (pool === 'md' ? ids.find((id) => !MASTER_DUEL_EXCLUDED_IDS.has(Number(id))) : ids[0]) || ids[0];
+  }
   function cardImageUrl(card) { return simulatedCardDataUrl(card); }
   function cardImageKey(id) { return `${CARD_IMAGE_CACHE_VERSION}:${String(id)}`; }
   function cardImagePrefix(id) { return String(id).padStart(8, '0').slice(0, 2); }
@@ -386,8 +394,9 @@
           element.dataset.zoomable = 'false';
         } else element.hidden = true;
       };
-      if (state.imageQuality === 'zh' && card?.ids?.[0]) {
-        const requestedId = String(card.ids[0]);
+      const imageId = preferredCardId(card);
+      if (state.imageQuality === 'zh' && imageId) {
+        const requestedId = String(imageId);
         element.dataset.requestedCardId = requestedId;
         element.dataset.requestedCardName = card.name;
         if (imageLoadObserver && element.closest('#candidateTable, #groupDialogList, #historyList, #historyTimeline')) imageLoadObserver.observe(element);
@@ -880,7 +889,8 @@
     }
     if (aliases.length) groups.push(aliases);
     const ids = card.ids || [], reliable = groups.length === ids.length;
-    return ids.map((id, index) => ({ name: reliable ? groups[index][0] : index === 0 ? card.name : `同组卡片 #${id}`, id }));
+    return ids.map((id, index) => ({ name: reliable ? groups[index][0] : index === 0 ? card.name : `同组卡片 #${id}`, id }))
+      .filter((member) => state.pool !== 'md' || !MASTER_DUEL_EXCLUDED_IDS.has(Number(member.id)));
   }
 
   function openGroupDialog(index) {
