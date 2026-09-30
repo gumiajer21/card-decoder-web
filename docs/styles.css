@@ -458,6 +458,7 @@ html[data-theme="light"] .history-group { background:rgba(246,250,252,.94); }
 .feedback-modal { width: min(760px,calc(100% - 24px)); }
 
 .modal { width: min(720px, calc(100% - 24px)); max-height: calc(100vh - 30px); padding: 0; overflow: auto; border: 1px solid var(--line-strong); border-radius: 16px; color: var(--text); background: #081525; box-shadow: 0 28px 90px rgba(0,0,0,.72); }
+.modal.history-modal { width:min(1440px,calc(100vw - 24px)); max-width:none; }
 .modal::backdrop { background: rgba(1,5,12,.76); backdrop-filter: blur(7px); }
 .image-viewer { width: min(720px, calc(100vw - 28px)); max-width: none; max-height: calc(100vh - 28px); padding: 18px; overflow: hidden; border: 1px solid var(--line-strong); border-radius: 18px; color: var(--text); background: rgba(5,13,25,.97); box-shadow: 0 34px 110px rgba(0,0,0,.78); }
 .image-viewer::backdrop { background: rgba(1,5,12,.86); backdrop-filter: blur(10px); }
